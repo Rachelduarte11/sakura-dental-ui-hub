@@ -6,8 +6,10 @@ import RegisterScreen from '@/components/RegisterScreen';
 import HomeScreen from '@/components/HomeScreen';
 import PatientManagement from '@/components/PatientManagement';
 import ServiceManagement from '@/components/ServiceManagement';
+import SalesModule from '@/components/SalesModule';
+import AppLayout from '@/components/AppLayout';
 
-type Screen = 'welcome' | 'login' | 'register' | 'home' | 'patients' | 'services';
+type Screen = 'welcome' | 'login' | 'register' | 'home' | 'patients' | 'services' | 'sales';
 
 const Index = () => {
   const [currentScreen, setCurrentScreen] = useState<Screen>('welcome');
@@ -43,22 +45,34 @@ const Index = () => {
         );
       case 'home':
         return (
-          <HomeScreen 
-            onNavigateToPatients={() => handleNavigation('patients')}
-            onNavigateToServices={() => handleNavigation('services')}
-          />
+          <AppLayout currentScreen={currentScreen} onNavigate={handleNavigation}>
+            <HomeScreen 
+              onNavigateToPatients={() => handleNavigation('patients')}
+              onNavigateToServices={() => handleNavigation('services')}
+            />
+          </AppLayout>
         );
       case 'patients':
         return (
-          <PatientManagement 
-            onBack={() => handleNavigation('home')}
-          />
+          <AppLayout currentScreen={currentScreen} onNavigate={handleNavigation}>
+            <PatientManagement 
+              onBack={() => handleNavigation('home')}
+            />
+          </AppLayout>
         );
       case 'services':
         return (
-          <ServiceManagement 
-            onBack={() => handleNavigation('home')}
-          />
+          <AppLayout currentScreen={currentScreen} onNavigate={handleNavigation}>
+            <ServiceManagement 
+              onBack={() => handleNavigation('home')}
+            />
+          </AppLayout>
+        );
+      case 'sales':
+        return (
+          <AppLayout currentScreen={currentScreen} onNavigate={handleNavigation}>
+            <SalesModule />
+          </AppLayout>
         );
       default:
         return (

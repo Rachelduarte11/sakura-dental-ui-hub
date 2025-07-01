@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Menu, Search, Plus } from 'lucide-react';
+import { Search, Plus } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -70,23 +70,8 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToPatients, onNavigat
       <div className="bg-white shadow-sm border-b border-sakura-gray-medium">
         <div className="flex items-center justify-between p-4">
           <div className="flex items-center gap-4">
-            <h1 className="text-xl font-bold text-sakura-red">Home</h1>
+            <h1 className="text-xl font-bold text-sakura-red">Dashboard</h1>
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="text-sakura-gray hover:text-sakura-red">
-                <Menu className="h-6 w-6" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="bg-white border-sakura-gray-medium">
-              <DropdownMenuItem onClick={onNavigateToPatients}>Gestión de Pacientes</DropdownMenuItem>
-              <DropdownMenuItem onClick={onNavigateToServices}>Gestión de Servicios</DropdownMenuItem>
-              <DropdownMenuItem>Perfil</DropdownMenuItem>
-              <DropdownMenuItem>Configuración</DropdownMenuItem>
-              <DropdownMenuItem>Ayuda</DropdownMenuItem>
-              <DropdownMenuItem className="text-red-600">Cerrar sesión</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
         </div>
       </div>
 
@@ -147,7 +132,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToPatients, onNavigat
       </div>
 
       {/* Floating Action Button */}
-      <div className="fixed bottom-6 right-6">
+      <div className="fixed bottom-20 md:bottom-6 right-6">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
