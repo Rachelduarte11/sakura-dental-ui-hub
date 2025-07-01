@@ -4,8 +4,10 @@ import WelcomeScreen from '@/components/WelcomeScreen';
 import LoginScreen from '@/components/LoginScreen';
 import RegisterScreen from '@/components/RegisterScreen';
 import HomeScreen from '@/components/HomeScreen';
+import PatientManagement from '@/components/PatientManagement';
+import ServiceManagement from '@/components/ServiceManagement';
 
-type Screen = 'welcome' | 'login' | 'register' | 'home';
+type Screen = 'welcome' | 'login' | 'register' | 'home' | 'patients' | 'services';
 
 const Index = () => {
   const [currentScreen, setCurrentScreen] = useState<Screen>('welcome');
@@ -40,7 +42,24 @@ const Index = () => {
           />
         );
       case 'home':
-        return <HomeScreen />;
+        return (
+          <HomeScreen 
+            onNavigateToPatients={() => handleNavigation('patients')}
+            onNavigateToServices={() => handleNavigation('services')}
+          />
+        );
+      case 'patients':
+        return (
+          <PatientManagement 
+            onBack={() => handleNavigation('home')}
+          />
+        );
+      case 'services':
+        return (
+          <ServiceManagement 
+            onBack={() => handleNavigation('home')}
+          />
+        );
       default:
         return (
           <WelcomeScreen

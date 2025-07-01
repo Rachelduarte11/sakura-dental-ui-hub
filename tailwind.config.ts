@@ -64,13 +64,17 @@ export default {
 					ring: 'hsl(var(--sidebar-ring))'
 				},
 				sakura: {
-					red: '#FF6B7A',
-					'red-dark': '#E85A6B',
+					red: '#FF6E63',
+					'red-dark': '#E85A50',
 					coral: '#FF8A80',
 					gray: '#9E9E9E',
-					'gray-light': '#F5F5F5',
+					'gray-light': '#F8F9FA',
 					'gray-medium': '#E0E0E0'
 				}
+			},
+			fontFamily: {
+				'montserrat': ['Montserrat', 'sans-serif'],
+				'sans': ['Montserrat', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'],
 			},
 			borderRadius: {
 				lg: 'var(--radius)',

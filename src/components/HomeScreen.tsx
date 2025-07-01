@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Menu, Search, Plus, MoreHorizontal } from 'lucide-react';
+import { Menu, Search, Plus } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,7 +12,12 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
-const HomeScreen: React.FC = () => {
+interface HomeScreenProps {
+  onNavigateToPatients: () => void;
+  onNavigateToServices: () => void;
+}
+
+const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToPatients, onNavigateToServices }) => {
   const [searchQuery, setSearchQuery] = useState('');
 
   // Mock data for payments and quotes
@@ -53,18 +58,6 @@ const HomeScreen: React.FC = () => {
           </div>
           <div className="flex items-center gap-3">
             <span className="font-semibold text-gray-800">S/ {item.amount.toFixed(2)}</span>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-sakura-gray hover:text-sakura-red">
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="bg-white border-sakura-gray-medium">
-                <DropdownMenuItem>Ver detalles</DropdownMenuItem>
-                <DropdownMenuItem>Editar</DropdownMenuItem>
-                <DropdownMenuItem className="text-red-600">Eliminar</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
           </div>
         </div>
       </CardContent>
@@ -72,7 +65,7 @@ const HomeScreen: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen bg-sakura-gray-light">
+    <div className="min-h-screen bg-white">
       {/* Header */}
       <div className="bg-white shadow-sm border-b border-sakura-gray-medium">
         <div className="flex items-center justify-between p-4">
@@ -86,6 +79,8 @@ const HomeScreen: React.FC = () => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="bg-white border-sakura-gray-medium">
+              <DropdownMenuItem onClick={onNavigateToPatients}>Gestión de Pacientes</DropdownMenuItem>
+              <DropdownMenuItem onClick={onNavigateToServices}>Gestión de Servicios</DropdownMenuItem>
               <DropdownMenuItem>Perfil</DropdownMenuItem>
               <DropdownMenuItem>Configuración</DropdownMenuItem>
               <DropdownMenuItem>Ayuda</DropdownMenuItem>
@@ -171,7 +166,7 @@ const HomeScreen: React.FC = () => {
               <Plus className="h-4 w-4 mr-2" />
               Nueva Cotización
             </DropdownMenuItem>
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={onNavigateToPatients}>
               <Plus className="h-4 w-4 mr-2" />
               Nuevo Paciente
             </DropdownMenuItem>

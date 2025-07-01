@@ -25,14 +25,14 @@ const SakuraIcon: React.FC<SakuraIconProps> = ({ className = "", size = 64 }) =>
             <g key={index} transform={`rotate(${index * 72})`}>
               <path
                 d="M 0,-6 C -8,-20 -20,-25 -15,-35 C -10,-25 -8,-20 0,-15 C 8,-20 10,-25 15,-35 C 20,-25 8,-20 0,-6 Z"
-                fill="#E53E3E"
+                fill="#FF6E63"
                 className="drop-shadow-sm"
               />
             </g>
           ))}
           
           {/* Inner decoration */}
-          <circle cx="0" cy="0" r="3" fill="#E53E3E" />
+          <circle cx="0" cy="0" r="3" fill="#FF6E63" />
           <circle cx="0" cy="0" r="1.5" fill="#FFFFFF" />
         </g>
       </svg>
