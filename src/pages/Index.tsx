@@ -1,14 +1,57 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+
+import React, { useState } from 'react';
+import WelcomeScreen from '@/components/WelcomeScreen';
+import LoginScreen from '@/components/LoginScreen';
+import RegisterScreen from '@/components/RegisterScreen';
+import HomeScreen from '@/components/HomeScreen';
+
+type Screen = 'welcome' | 'login' | 'register' | 'home';
 
 const Index = () => {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
-    </div>
-  );
+  const [currentScreen, setCurrentScreen] = useState<Screen>('welcome');
+
+  const handleNavigation = (screen: Screen) => {
+    setCurrentScreen(screen);
+  };
+
+  const renderScreen = () => {
+    switch (currentScreen) {
+      case 'welcome':
+        return (
+          <WelcomeScreen
+            onLogin={() => handleNavigation('login')}
+            onRegister={() => handleNavigation('register')}
+          />
+        );
+      case 'login':
+        return (
+          <LoginScreen
+            onBack={() => handleNavigation('welcome')}
+            onLogin={() => handleNavigation('home')}
+            onRegister={() => handleNavigation('register')}
+          />
+        );
+      case 'register':
+        return (
+          <RegisterScreen
+            onBack={() => handleNavigation('welcome')}
+            onRegister={() => handleNavigation('home')}
+            onLogin={() => handleNavigation('login')}
+          />
+        );
+      case 'home':
+        return <HomeScreen />;
+      default:
+        return (
+          <WelcomeScreen
+            onLogin={() => handleNavigation('login')}
+            onRegister={() => handleNavigation('register')}
+          />
+        );
+    }
+  };
+
+  return <div className="min-h-screen">{renderScreen()}</div>;
 };
 
 export default Index;
