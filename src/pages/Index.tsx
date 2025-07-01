@@ -7,9 +7,12 @@ import HomeScreen from '@/components/HomeScreen';
 import PatientManagement from '@/components/PatientManagement';
 import ServiceManagement from '@/components/ServiceManagement';
 import SalesModule from '@/components/SalesModule';
+import InventoryManagement from '@/components/InventoryManagement';
+import FinanceManagement from '@/components/FinanceManagement';
+import DoctorManagement from '@/components/DoctorManagement';
 import AppLayout from '@/components/AppLayout';
 
-type Screen = 'welcome' | 'login' | 'register' | 'home' | 'patients' | 'services' | 'sales';
+type Screen = 'welcome' | 'login' | 'register' | 'home' | 'patients' | 'services' | 'sales' | 'inventory' | 'finances' | 'doctors';
 
 const Index = () => {
   const [currentScreen, setCurrentScreen] = useState<Screen>('welcome');
@@ -72,6 +75,24 @@ const Index = () => {
         return (
           <AppLayout currentScreen={currentScreen} onNavigate={handleNavigation}>
             <SalesModule />
+          </AppLayout>
+        );
+      case 'inventory':
+        return (
+          <AppLayout currentScreen={currentScreen} onNavigate={handleNavigation}>
+            <InventoryManagement />
+          </AppLayout>
+        );
+      case 'finances':
+        return (
+          <AppLayout currentScreen={currentScreen} onNavigate={handleNavigation}>
+            <FinanceManagement />
+          </AppLayout>
+        );
+      case 'doctors':
+        return (
+          <AppLayout currentScreen={currentScreen} onNavigate={handleNavigation}>
+            <DoctorManagement />
           </AppLayout>
         );
       default:

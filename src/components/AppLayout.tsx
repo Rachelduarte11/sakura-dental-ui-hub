@@ -1,9 +1,9 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Home, Users, Settings, ShoppingCart } from 'lucide-react';
+import { Home, Users, Settings, ShoppingCart, Package, Calculator, UserCheck } from 'lucide-react';
 
-type Screen = 'home' | 'patients' | 'services' | 'sales';
+type Screen = 'home' | 'patients' | 'services' | 'sales' | 'inventory' | 'finances' | 'doctors';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -17,6 +17,9 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children, currentScreen, onNaviga
     { id: 'home' as Screen, label: 'Home', icon: Home },
     { id: 'patients' as Screen, label: 'Pacientes', icon: Users },
     { id: 'services' as Screen, label: 'Servicios', icon: Settings },
+    { id: 'inventory' as Screen, label: 'Inventario', icon: Package },
+    { id: 'finances' as Screen, label: 'Finanzas', icon: Calculator },
+    { id: 'doctors' as Screen, label: 'Doctores', icon: UserCheck },
   ];
 
   return (
@@ -64,7 +67,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children, currentScreen, onNaviga
 
       {/* Bottom navigation for mobile (below md) */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-sakura-gray-medium">
-        <nav className="flex">
+        <nav className="flex overflow-x-auto">
           {navigationItems.map((item) => {
             const Icon = item.icon;
             const isActive = currentScreen === item.id;
@@ -73,7 +76,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children, currentScreen, onNaviga
               <Button
                 key={item.id}
                 variant="ghost"
-                className={`flex-1 flex flex-col items-center justify-center h-16 space-y-1 ${
+                className={`flex-1 min-w-0 flex flex-col items-center justify-center h-16 space-y-1 ${
                   isActive 
                     ? "text-sakura-red bg-sakura-red/10" 
                     : "text-sakura-gray hover:text-sakura-red hover:bg-sakura-red/5"
@@ -81,7 +84,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children, currentScreen, onNaviga
                 onClick={() => onNavigate(item.id)}
               >
                 <Icon className="h-5 w-5" />
-                <span className="text-xs font-medium">{item.label}</span>
+                <span className="text-xs font-medium truncate">{item.label}</span>
               </Button>
             );
           })}
