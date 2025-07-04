@@ -1,4 +1,6 @@
 
+'use client'
+
 import React, { useState } from 'react';
 import WelcomeScreen from '@/components/WelcomeScreen';
 import LoginScreen from '@/components/LoginScreen';
@@ -17,7 +19,7 @@ import AppLayout from '@/components/AppLayout';
 
 type Screen = 'welcome' | 'login' | 'register' | 'home' | 'patients' | 'services' | 'sales' | 'inventory' | 'finances' | 'doctors' | 'quotes' | 'payments' | 'patient-account';
 
-const Index = () => {
+export default function Home() {
   const [currentScreen, setCurrentScreen] = useState<Screen>('welcome');
 
   const handleNavigation = (screen: Screen) => {
@@ -127,6 +129,4 @@ const Index = () => {
   };
 
   return <div className="min-h-screen">{renderScreen()}</div>;
-};
-
-export default Index;
+}
