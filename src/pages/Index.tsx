@@ -10,9 +10,12 @@ import SalesModule from '@/components/SalesModule';
 import InventoryManagement from '@/components/InventoryManagement';
 import FinanceManagement from '@/components/FinanceManagement';
 import DoctorManagement from '@/components/DoctorManagement';
+import QuoteManagement from '@/components/QuoteManagement';
+import PaymentManagement from '@/components/PaymentManagement';
+import PatientAccount from '@/components/PatientAccount';
 import AppLayout from '@/components/AppLayout';
 
-type Screen = 'welcome' | 'login' | 'register' | 'home' | 'patients' | 'services' | 'sales' | 'inventory' | 'finances' | 'doctors';
+type Screen = 'welcome' | 'login' | 'register' | 'home' | 'patients' | 'services' | 'sales' | 'inventory' | 'finances' | 'doctors' | 'quotes' | 'payments' | 'patient-account';
 
 const Index = () => {
   const [currentScreen, setCurrentScreen] = useState<Screen>('welcome');
@@ -75,6 +78,24 @@ const Index = () => {
         return (
           <AppLayout currentScreen={currentScreen} onNavigate={handleNavigation}>
             <SalesModule />
+          </AppLayout>
+        );
+      case 'quotes':
+        return (
+          <AppLayout currentScreen={currentScreen} onNavigate={handleNavigation}>
+            <QuoteManagement />
+          </AppLayout>
+        );
+      case 'payments':
+        return (
+          <AppLayout currentScreen={currentScreen} onNavigate={handleNavigation}>
+            <PaymentManagement />
+          </AppLayout>
+        );
+      case 'patient-account':
+        return (
+          <AppLayout currentScreen={currentScreen} onNavigate={handleNavigation}>
+            <PatientAccount />
           </AppLayout>
         );
       case 'inventory':

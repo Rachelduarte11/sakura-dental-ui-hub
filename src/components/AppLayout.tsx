@@ -12,10 +12,13 @@ import {
   UserCheck,
   Search,
   Bell,
-  User
+  User,
+  FileText,
+  DollarSign,
+  CreditCard
 } from 'lucide-react';
 
-type Screen = 'home' | 'patients' | 'services' | 'sales' | 'inventory' | 'finances' | 'doctors';
+type Screen = 'home' | 'patients' | 'services' | 'sales' | 'inventory' | 'finances' | 'doctors' | 'quotes' | 'payments' | 'patient-account';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -33,8 +36,11 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children, currentScreen, onNaviga
   const [searchQuery, setSearchQuery] = useState('');
 
   const navigationItems: NavigationItem[] = [
-    { id: 'home', icon: Home, label: 'Home' },
+    { id: 'home', icon: Home, label: 'Inicio' },
     { id: 'sales', icon: ShoppingCart, label: 'POS' },
+    { id: 'quotes', icon: FileText, label: 'Cotizaciones' },
+    { id: 'payments', icon: DollarSign, label: 'Pagos' },
+    { id: 'patient-account', icon: CreditCard, label: 'Cuentas' },
     { id: 'patients', icon: Users, label: 'Pacientes' },
     { id: 'services', icon: Settings, label: 'Servicios' },
     { id: 'doctors', icon: UserCheck, label: 'Doctores' },
