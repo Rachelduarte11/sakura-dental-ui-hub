@@ -101,7 +101,7 @@ All colors MUST be HSL.
 }
 
 @layer components {
-  .sakura-gradient {
+  .coral-gradient {
     background: linear-gradient(135deg, #FF6E63 0%, #FF8A80 100%);
   }
   

@@ -49,7 +49,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children, currentScreen, onNaviga
         <div className="flex flex-col flex-1">
           {/* Logo */}
           <div className="flex items-center justify-center h-16 border-b border-slate-200">
-            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#FF6E63' }}>
               <span className="text-white font-bold text-lg">S</span>
             </div>
           </div>
@@ -67,9 +67,10 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children, currentScreen, onNaviga
                   size="icon"
                   className={`w-14 h-14 rounded-xl transition-all duration-200 ${
                     isActive 
-                      ? "bg-blue-100 text-blue-600 hover:bg-blue-100" 
+                      ? "text-white hover:opacity-90" 
                       : "text-slate-500 hover:bg-slate-100 hover:text-slate-700"
                   }`}
+                  style={isActive ? { backgroundColor: '#FF6E63' } : {}}
                   onClick={() => onNavigate(item.id)}
                   title={item.label}
                 >
@@ -101,7 +102,8 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children, currentScreen, onNaviga
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Buscar..."
-                className="pl-10 w-64 bg-slate-100 border-0 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20"
+                className="pl-10 w-64 bg-slate-100 border-0 rounded-xl focus:bg-white focus:ring-2 focus:ring-offset-2"
+                style={{ '--tw-ring-color': '#FF6E63' } as any}
               />
             </div>
             
@@ -112,7 +114,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children, currentScreen, onNaviga
             
             {/* User Avatar */}
             <Button variant="ghost" size="icon" className="text-slate-500 hover:text-slate-700">
-              <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+              <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: '#FF6E63' }}>
                 <User className="h-4 w-4 text-white" />
               </div>
             </Button>
@@ -138,9 +140,10 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children, currentScreen, onNaviga
                 variant="ghost"
                 className={`flex-1 min-w-0 flex flex-col items-center justify-center h-16 space-y-1 ${
                   isActive 
-                    ? "text-blue-600 bg-blue-50" 
-                    : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                    ? "bg-red-50" 
+                    : "hover:bg-slate-50"
                 }`}
+                style={isActive ? { color: '#FF6E63' } : { color: '#64748b' }}
                 onClick={() => onNavigate(item.id)}
               >
                 <Icon className="h-5 w-5" />
