@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { 
   Home, 
   Users, 
@@ -9,8 +10,9 @@ import {
   Package, 
   Calculator, 
   UserCheck,
-  ChevronDown,
-  ChevronRight
+  Search,
+  Bell,
+  User
 } from 'lucide-react';
 
 type Screen = 'home' | 'patients' | 'services' | 'sales' | 'inventory' | 'finances' | 'doctors';
@@ -21,144 +23,112 @@ interface AppLayoutProps {
   onNavigate: (screen: Screen) => void;
 }
 
-interface NavigationGroup {
-  id: string;
+interface NavigationItem {
+  id: Screen;
+  icon: React.ComponentType<any>;
   label: string;
-  items: {
-    id: Screen;
-    label: string;
-    icon: React.ComponentType<any>;
-  }[];
 }
 
 const AppLayout: React.FC<AppLayoutProps> = ({ children, currentScreen, onNavigate }) => {
-  const [expandedGroups, setExpandedGroups] = useState<string[]>(['inicio', 'operaciones', 'administracion']);
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const navigationGroups: NavigationGroup[] = [
-    {
-      id: 'inicio',
-      label: 'Inicio',
-      items: [
-        { id: 'home' as Screen, label: 'Home', icon: Home },
-      ]
-    },
-    {
-      id: 'operaciones',
-      label: 'Operaciones',
-      items: [
-        { id: 'sales' as Screen, label: 'Flujo POS (Registrar Venta)', icon: ShoppingCart },
-        { id: 'services' as Screen, label: 'Servicios', icon: Settings },
-        { id: 'patients' as Screen, label: 'Pacientes', icon: Users },
-      ]
-    },
-    {
-      id: 'equipo',
-      label: 'Equipo Médico',
-      items: [
-        { id: 'doctors' as Screen, label: 'Doctores', icon: UserCheck },
-      ]
-    },
-    {
-      id: 'administracion',
-      label: 'Administración',
-      items: [
-        { id: 'finances' as Screen, label: 'Finanzas', icon: Calculator },
-        { id: 'inventory' as Screen, label: 'Inventario', icon: Package },
-      ]
-    }
+  const navigationItems: NavigationItem[] = [
+    { id: 'home', icon: Home, label: 'Home' },
+    { id: 'sales', icon: ShoppingCart, label: 'POS' },
+    { id: 'patients', icon: Users, label: 'Pacientes' },
+    { id: 'services', icon: Settings, label: 'Servicios' },
+    { id: 'doctors', icon: UserCheck, label: 'Doctores' },
+    { id: 'finances', icon: Calculator, label: 'Finanzas' },
+    { id: 'inventory', icon: Package, label: 'Inventario' },
   ];
-
-  // Flat list for mobile navigation
-  const mobileNavigationItems = [
-    { id: 'home' as Screen, label: 'Home', icon: Home },
-    { id: 'sales' as Screen, label: 'POS', icon: ShoppingCart },
-    { id: 'patients' as Screen, label: 'Pacientes', icon: Users },
-    { id: 'services' as Screen, label: 'Servicios', icon: Settings },
-    { id: 'doctors' as Screen, label: 'Doctores', icon: UserCheck },
-    { id: 'finances' as Screen, label: 'Finanzas', icon: Calculator },
-    { id: 'inventory' as Screen, label: 'Inventario', icon: Package },
-  ];
-
-  const toggleGroup = (groupId: string) => {
-    setExpandedGroups(prev => 
-      prev.includes(groupId) 
-        ? prev.filter(id => id !== groupId)
-        : [...prev, groupId]
-    );
-  };
-
-  const isGroupExpanded = (groupId: string) => expandedGroups.includes(groupId);
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row bg-white">
-      {/* Sidebar for desktop (md and above) */}
-      <div className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 bg-white border-r border-sakura-gray-medium">
-        <div className="flex flex-col flex-1 min-h-0">
+    <div className="min-h-screen flex bg-slate-50">
+      {/* Sidebar - Desktop only */}
+      <div className="hidden md:flex md:w-20 md:flex-col md:fixed md:inset-y-0 bg-white border-r border-slate-200">
+        <div className="flex flex-col flex-1">
           {/* Logo */}
-          <div className="flex items-center h-16 px-4 border-b border-sakura-gray-medium">
-            <h1 className="text-xl font-bold text-sakura-red">Sakura Dental</h1>
+          <div className="flex items-center justify-center h-16 border-b border-slate-200">
+            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
+              <span className="text-white font-bold text-lg">S</span>
+            </div>
           </div>
           
-          {/* Hierarchical Navigation */}
-          <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
-            {navigationGroups.map((group) => (
-              <div key={group.id} className="space-y-1">
-                {/* Group Header */}
+          {/* Navigation Icons */}
+          <nav className="flex-1 px-3 py-6 space-y-3">
+            {navigationItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = currentScreen === item.id;
+              
+              return (
                 <Button
+                  key={item.id}
                   variant="ghost"
-                  className="w-full justify-between h-10 px-3 text-sm font-medium text-sakura-gray hover:bg-sakura-gray-light hover:text-sakura-red"
-                  onClick={() => toggleGroup(group.id)}
+                  size="icon"
+                  className={`w-14 h-14 rounded-xl transition-all duration-200 ${
+                    isActive 
+                      ? "bg-blue-100 text-blue-600 hover:bg-blue-100" 
+                      : "text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                  }`}
+                  onClick={() => onNavigate(item.id)}
+                  title={item.label}
                 >
-                  <span>{group.label}</span>
-                  {isGroupExpanded(group.id) ? (
-                    <ChevronDown className="h-4 w-4" />
-                  ) : (
-                    <ChevronRight className="h-4 w-4" />
-                  )}
+                  <Icon className="h-6 w-6" />
                 </Button>
-                
-                {/* Group Items */}
-                {isGroupExpanded(group.id) && (
-                  <div className="ml-4 space-y-1">
-                    {group.items.map((item) => {
-                      const Icon = item.icon;
-                      const isActive = currentScreen === item.id;
-                      
-                      return (
-                        <Button
-                          key={item.id}
-                          variant={isActive ? "default" : "ghost"}
-                          className={`w-full justify-start h-10 text-sm ${
-                            isActive 
-                              ? "bg-sakura-red text-white hover:bg-sakura-red-dark" 
-                              : "text-sakura-gray hover:bg-sakura-gray-light hover:text-sakura-red"
-                          }`}
-                          onClick={() => onNavigate(item.id)}
-                        >
-                          <Icon className="mr-3 h-4 w-4" />
-                          {item.label}
-                        </Button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </nav>
         </div>
       </div>
 
       {/* Main content */}
-      <div className="flex flex-col flex-1 md:ml-64">
-        <main className="flex-1 pb-16 md:pb-0">
+      <div className="flex flex-col flex-1 md:ml-20">
+        {/* Header */}
+        <header className="h-16 bg-white flex items-center justify-between px-6 border-b border-slate-200">
+          {/* Left side - Greeting */}
+          <div className="flex items-center">
+            <h1 className="text-lg font-semibold text-slate-800">
+              Hola Mohammad 👋
+            </h1>
+          </div>
+          
+          {/* Right side - Search and icons */}
+          <div className="flex items-center space-x-4">
+            {/* Search */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Buscar..."
+                className="pl-10 w-64 bg-slate-100 border-0 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20"
+              />
+            </div>
+            
+            {/* Notification */}
+            <Button variant="ghost" size="icon" className="text-slate-500 hover:text-slate-700">
+              <Bell className="h-5 w-5" />
+            </Button>
+            
+            {/* User Avatar */}
+            <Button variant="ghost" size="icon" className="text-slate-500 hover:text-slate-700">
+              <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                <User className="h-4 w-4 text-white" />
+              </div>
+            </Button>
+          </div>
+        </header>
+
+        {/* Page Content */}
+        <main className="flex-1 overflow-auto pb-16 md:pb-0">
           {children}
         </main>
       </div>
 
-      {/* Bottom navigation for mobile (below md) */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-sakura-gray-medium">
-        <nav className="flex overflow-x-auto">
-          {mobileNavigationItems.map((item) => {
+      {/* Bottom navigation for mobile */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200">
+        <nav className="flex">
+          {navigationItems.slice(0, 5).map((item) => {
             const Icon = item.icon;
             const isActive = currentScreen === item.id;
             
@@ -168,12 +138,12 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children, currentScreen, onNaviga
                 variant="ghost"
                 className={`flex-1 min-w-0 flex flex-col items-center justify-center h-16 space-y-1 ${
                   isActive 
-                    ? "text-sakura-red bg-sakura-red/10" 
-                    : "text-sakura-gray hover:text-sakura-red hover:bg-sakura-red/5"
+                    ? "text-blue-600 bg-blue-50" 
+                    : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
                 }`}
                 onClick={() => onNavigate(item.id)}
               >
-                <Icon className="h-4 w-4" />
+                <Icon className="h-5 w-5" />
                 <span className="text-xs font-medium truncate">{item.label}</span>
               </Button>
             );
