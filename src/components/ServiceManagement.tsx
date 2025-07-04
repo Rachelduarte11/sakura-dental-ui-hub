@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -219,7 +218,7 @@ const ServiceManagement: React.FC<ServiceManagementProps> = ({ onBack }) => {
   );
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-slate-50">
       {/* Header */}
       <div className="bg-white shadow-sm border-b border-sakura-gray-medium">
         <div className="flex items-center justify-between p-4">
@@ -232,7 +231,9 @@ const ServiceManagement: React.FC<ServiceManagementProps> = ({ onBack }) => {
             >
               <ArrowUp className="h-6 w-6 rotate-[-90deg]" />
             </Button>
-            <h1 className="text-xl font-bold text-sakura-red">Gestión de Servicios</h1>
+            <div className="bg-sakura-red px-4 py-2 rounded-lg">
+              <h1 className="text-lg font-semibold text-black">Gestión de Servicios</h1>
+            </div>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
