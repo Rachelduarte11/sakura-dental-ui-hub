@@ -1,0 +1,1 @@
+export { default as DoctorManagement } from './components/DoctorManagement'; 

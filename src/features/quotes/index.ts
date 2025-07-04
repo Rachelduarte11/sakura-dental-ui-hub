@@ -1,0 +1,1 @@
+export { default as QuoteManagement } from './components/QuoteManagement'; 

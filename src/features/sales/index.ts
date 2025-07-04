@@ -1,0 +1,1 @@
+export { default as SalesModule } from './components/SalesModule'; 
