@@ -79,7 +79,7 @@ src/
 │   ├── finances/                 # Página de finanzas
 │   ├── payments/                 # Página de pagos
 │   ├── quotes/                   # Página de cotizaciones
-│   ├── patient-account/          # Página de cuentas
+
 │   ├── home/                     # Página principal
 │   ├── login/                    # Página de login
 │   ├── register/                 # Página de registro

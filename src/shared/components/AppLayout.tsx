@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import Sidebar from './Sidebar';
 
-type Screen = 'home' | 'agenda' | 'patients' | 'services' | 'sales' | 'inventory' | 'finances' | 'doctors' | 'quotes' | 'payments' | 'patient-account';
+type Screen = 'home' | 'agenda' | 'patients' | 'services' | 'sales' | 'inventory' | 'finances' | 'doctors' | 'quotes' | 'quotes-create' | 'payments';
 
 interface AppLayoutProps {
   children: React.ReactNode;

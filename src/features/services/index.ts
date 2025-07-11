@@ -1,1 +1,1 @@
-export { default as ServiceManagement } from './components/ServiceManagement'; 
+export { default as ServiceManagement } from './view/ServiceManagement'; 

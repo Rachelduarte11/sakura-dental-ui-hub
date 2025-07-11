@@ -7,13 +7,7 @@ import { Badge } from '@/shared/components/ui/badge';
 import { Textarea } from '@/shared/components/ui/textarea';
 import { Label } from '@/shared/components/ui/label';
 import { Search, Plus, Edit, Trash2, ArrowUp } from 'lucide-react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/shared/components/ui/dialog';
+import EntityFormDialog from '@/shared/components/EntityFormDialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,9 +27,10 @@ interface Patient {
 
 interface PatientManagementProps {
   onBack: () => void;
+  onPatientClick: (patientId: number) => void;
 }
 
-const PatientManagement: React.FC<PatientManagementProps> = ({ onBack }) => {
+const PatientManagement: React.FC<PatientManagementProps> = ({ onBack, onPatientClick }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
@@ -132,7 +127,7 @@ const PatientManagement: React.FC<PatientManagementProps> = ({ onBack }) => {
   };
 
   const PatientCard = ({ patient }: { patient: Patient }) => (
-    <Card className="mb-4 shadow-sm border-sakura-gray-medium/30 hover:shadow-md transition-shadow">
+    <Card className="mb-4 shadow-sm border-sakura-gray-medium/30 hover:shadow-md transition-shadow cursor-pointer" onClick={() => onPatientClick(patient.id)}>
       <CardContent className="p-4">
         <div className="flex items-start justify-between">
           <div className="flex-1">
@@ -149,16 +144,27 @@ const PatientManagement: React.FC<PatientManagementProps> = ({ onBack }) => {
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-sakura-gray hover:text-sakura-red">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-8 w-8 text-sakura-gray hover:text-sakura-red"
+                onClick={(e) => e.stopPropagation()} // Evitar que se active el click del card
+              >
                 <Edit className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="bg-white border-sakura-gray-medium">
-              <DropdownMenuItem onClick={() => handleEdit(patient)}>
+              <DropdownMenuItem onClick={(e) => {
+                e.stopPropagation();
+                handleEdit(patient);
+              }}>
                 <Edit className="h-4 w-4 mr-2" />
                 Editar
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleDelete(patient.id)} className="text-red-600">
+              <DropdownMenuItem onClick={(e) => {
+                e.stopPropagation();
+                handleDelete(patient.id);
+              }} className="text-red-600">
                 <Trash2 className="h-4 w-4 mr-2" />
                 Eliminar
               </DropdownMenuItem>
@@ -185,8 +191,11 @@ const PatientManagement: React.FC<PatientManagementProps> = ({ onBack }) => {
             </Button>
             <h1 className="text-xl font-bold text-sakura-red">Gestión de Pacientes</h1>
           </div>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
+          <EntityFormDialog
+            open={isDialogOpen}
+            onOpenChange={setIsDialogOpen}
+            title={editingPatient ? 'Editar Paciente' : 'Nuevo Paciente'}
+            trigger={
               <Button 
                 className="bg-sakura-red hover:bg-sakura-red-dark text-white"
                 onClick={() => {
@@ -203,78 +212,66 @@ const PatientManagement: React.FC<PatientManagementProps> = ({ onBack }) => {
                 <Plus className="h-4 w-4 mr-2" />
                 Nuevo Paciente
               </Button>
-            </DialogTrigger>
-            <DialogContent className="bg-white max-w-md">
-              <DialogHeader>
-                <DialogTitle className="text-sakura-red">
-                  {editingPatient ? 'Editar Paciente' : 'Nuevo Paciente'}
-                </DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Nombre Completo</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
-                    placeholder="Ingrese el nombre completo"
-                    required
-                    className="focus:border-sakura-red focus:ring-sakura-red/20"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Correo Electrónico</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({...formData, email: e.target.value})}
-                    placeholder="correo@ejemplo.com"
-                    required
-                    className="focus:border-sakura-red focus:ring-sakura-red/20"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Teléfono</Label>
-                  <Input
-                    id="phone"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                    placeholder="+51 999 888 777"
-                    required
-                    className="focus:border-sakura-red focus:ring-sakura-red/20"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="address">Dirección</Label>
-                  <Input
-                    id="address"
-                    value={formData.address}
-                    onChange={(e) => setFormData({...formData, address: e.target.value})}
-                    placeholder="Dirección completa"
-                    required
-                    className="focus:border-sakura-red focus:ring-sakura-red/20"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="medicalHistory">Historial Médico</Label>
-                  <Textarea
-                    id="medicalHistory"
-                    value={formData.medicalHistory}
-                    onChange={(e) => setFormData({...formData, medicalHistory: e.target.value})}
-                    placeholder="Historial médico y dental relevante"
-                    className="focus:border-sakura-red focus:ring-sakura-red/20"
-                  />
-                </div>
-                <Button 
-                  type="submit" 
-                  className="w-full bg-sakura-red hover:bg-sakura-red-dark text-white"
-                >
-                  {editingPatient ? 'Actualizar Paciente' : 'Registrar Paciente'}
-                </Button>
-              </form>
-            </DialogContent>
-          </Dialog>
+            }
+            onSubmit={handleSubmit}
+            submitButtonText={editingPatient ? 'Actualizar Paciente' : 'Registrar Paciente'}
+          >
+            <div className="space-y-2">
+              <Label htmlFor="name">Nombre Completo</Label>
+              <Input
+                id="name"
+                value={formData.name}
+                onChange={(e) => setFormData({...formData, name: e.target.value})}
+                placeholder="Ingrese el nombre completo"
+                required
+                className="focus:border-sakura-red focus:ring-sakura-red/20"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">Correo Electrónico</Label>
+              <Input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({...formData, email: e.target.value})}
+                placeholder="correo@ejemplo.com"
+                required
+                className="focus:border-sakura-red focus:ring-sakura-red/20"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="phone">Teléfono</Label>
+              <Input
+                id="phone"
+                value={formData.phone}
+                onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                placeholder="+51 999 888 777"
+                required
+                className="focus:border-sakura-red focus:ring-sakura-red/20"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="address">Dirección</Label>
+              <Input
+                id="address"
+                value={formData.address}
+                onChange={(e) => setFormData({...formData, address: e.target.value})}
+                placeholder="Dirección completa"
+                required
+                className="focus:border-sakura-red focus:ring-sakura-red/20"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="medicalHistory">Historial Médico</Label>
+              <Textarea
+                id="medicalHistory"
+                value={formData.medicalHistory}
+                onChange={(e) => setFormData({...formData, medicalHistory: e.target.value})}
+                placeholder="Historial médico y dental relevante"
+                className="focus:border-sakura-red focus:ring-sakura-red/20"
+              />
+            </div>
+          </EntityFormDialog>
         </div>
       </div>
 
