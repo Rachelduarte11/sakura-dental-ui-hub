@@ -5,6 +5,7 @@ import { Badge } from '@/shared/components/ui/badge';
 import { Plus, ChevronLeft, ChevronRight, Calendar, Clock, User, Stethoscope, Loader2 } from 'lucide-react';
 import { useAgendaStore, useEmployeeStore, usePatientStore, useServiceStore, type Appointment, type Employee, type Patient, type Service } from '@/shared/stores';
 import { toast } from 'sonner';
+import AppointmentModal from './AppointmentModal';
 
 interface CalendarDay {
   date: Date;
