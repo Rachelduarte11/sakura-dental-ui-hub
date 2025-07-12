@@ -1,10 +1,12 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 import { Label } from '@/shared/components/ui/label';
 import { ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import SakuraIcon from '@/shared/components/SakuraIcon';
+import { useAuthStore } from '@/shared/stores';
+import { toast } from 'sonner';
 
 interface LoginScreenProps {
   onBack: () => void;
@@ -17,10 +19,35 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onBack, onLogin, onRegister }
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const { login, isLoading, error, clearError, isAuthenticated } = useAuthStore();
+
+  // Manejar errores de autenticación
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
+      clearError();
+    }
+  }, [error, clearError]);
+
+  // Redirigir si ya está autenticado
+  useEffect(() => {
+    if (isAuthenticated) {
+      onLogin();
+    }
+  }, [isAuthenticated, onLogin]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Login attempt:', { email, password });
-    onLogin();
+    if (!email || !password) {
+      toast.error('Por favor completa todos los campos');
+      return;
+    }
+    
+    try {
+      await login(email, password);
+    } catch (error) {
+      // El error ya se maneja en el useEffect
+    }
   };
 
   return (
@@ -105,9 +132,10 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onBack, onLogin, onRegister }
 
             <Button
               type="submit"
-              className="w-full h-14 bg-sakura-red hover:bg-sakura-red-dark text-white font-medium text-lg rounded-xl shadow-lg transition-all duration-200 hover:shadow-xl"
+              disabled={isLoading}
+              className="w-full h-14 bg-sakura-red hover:bg-sakura-red-dark text-white font-medium text-lg rounded-xl shadow-lg transition-all duration-200 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Ingresar
+              {isLoading ? 'Ingresando...' : 'Ingresar'}
             </Button>
           </form>
 

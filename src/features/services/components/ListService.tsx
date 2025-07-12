@@ -8,19 +8,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/shared/components/ui/dropdown-menu';
-
-export interface ServiceListItem {
-  id: number;
-  nombre: string;
-  descripcion: string;
-  precio: number;
-  categoria: string;
-  activo: boolean;
-}
+import { type Service } from '@/shared/stores';
 
 interface ServiceListProps {
-  services: ServiceListItem[];
-  onEdit?: (service: ServiceListItem) => void;
+  services: Service[];
+  onEdit?: (service: Service) => void;
   onToggleStatus?: (id: number) => void;
   onDelete?: (id: number) => void;
 }
@@ -29,15 +21,15 @@ const ServiceList: React.FC<ServiceListProps> = ({ services, onEdit, onToggleSta
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
       {services.map(service => (
-        <Card key={service.id} className="shadow-sm border-sakura-gray-medium/30 hover:shadow-md transition-shadow relative">
+        <Card key={service.service_id} className="shadow-sm border-sakura-gray-medium/30 hover:shadow-md transition-shadow relative">
           <CardContent className="p-3">
             <div className="flex items-center gap-2 mb-1">
-              <span className="font-semibold text-xs text-gray-800 truncate">{service.nombre}</span>
+              <span className="font-semibold text-xs text-gray-800 truncate">{service.name}</span>
               <Badge 
                 variant="secondary" 
-                className={service.activo ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}
+                className={service.status ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}
               >
-                {service.activo ? 'Activo' : 'Inactivo'}
+                {service.status ? 'Activo' : 'Inactivo'}
               </Badge>
               <div className="ml-auto">
                 <DropdownMenu>
@@ -53,12 +45,12 @@ const ServiceList: React.FC<ServiceListProps> = ({ services, onEdit, onToggleSta
                       </DropdownMenuItem>
                     )}
                     {onToggleStatus && (
-                      <DropdownMenuItem onClick={() => onToggleStatus(service.id)}>
-                        {service.activo ? 'Desactivar' : 'Activar'}
+                      <DropdownMenuItem onClick={() => onToggleStatus(service.service_id)}>
+                        {service.status ? 'Desactivar' : 'Activar'}
                       </DropdownMenuItem>
                     )}
                     {onDelete && (
-                      <DropdownMenuItem onClick={() => onDelete(service.id)} className="text-red-600">
+                      <DropdownMenuItem onClick={() => onDelete(service.service_id)} className="text-red-600">
                         <Trash2 className="h-4 w-4 mr-2" />Eliminar
                       </DropdownMenuItem>
                     )}
@@ -66,12 +58,12 @@ const ServiceList: React.FC<ServiceListProps> = ({ services, onEdit, onToggleSta
                 </DropdownMenu>
               </div>
             </div>
-            <p className="text-xs text-gray-600 mb-1 line-clamp-2">{service.descripcion}</p>
+            <p className="text-xs text-gray-600 mb-1 line-clamp-2">{service.description}</p>
             <div className="text-xs text-gray-700 mb-1">
-              <span className="font-medium">Precio:</span> S/ {service.precio.toFixed(2)}
+              <span className="font-medium">Precio:</span> S/ {service.base_price.toFixed(2)}
             </div>
             <div className="text-xs text-gray-500">
-              <span className="font-medium">Categoría:</span> {service.categoria}
+              <span className="font-medium">Categoría ID:</span> {service.categorie_service_id}
             </div>
           </CardContent>
         </Card>

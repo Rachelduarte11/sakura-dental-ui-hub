@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Badge } from '@/shared/components/ui/badge';
 import { Textarea } from '@/shared/components/ui/textarea';
 import { Label } from '@/shared/components/ui/label';
-import { Search, Plus, Edit, Trash2, ArrowUp } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, ArrowUp, Loader2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -22,15 +22,8 @@ import {
 import FormService, { ServiceFormData } from '../components/FormService';
 import List from '../components/ListService';
 import { useMemo } from 'react';
-
-interface Service {
-  id: number;
-  nombre: string;
-  descripcion: string;
-  precio: number;
-  categoria: string;
-  activo: boolean;
-}
+import { useServiceStore, type Service } from '@/shared/stores';
+import { toast } from 'sonner';
 
 interface ServiceManagementProps {
   onBack: () => void;
@@ -40,104 +33,116 @@ const ServiceManagement: React.FC<ServiceManagementProps> = ({ onBack }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
-  const [services, setServices] = useState<Service[]>([
-    {
-      id: 1,
-      nombre: "Limpieza Dental",
-      descripcion: "Limpieza profesional completa con ultrasonido y pulido",
-      precio: 80,
-      categoria: "Preventivo",
-      activo: true
-    },
-    {
-      id: 2,
-      nombre: "Blanqueamiento Dental",
-      descripcion: "Blanqueamiento profesional con gel de peróxido",
-      precio: 350,
-      categoria: "Estético",
-      activo: true
-    },
-    {
-      id: 3,
-      nombre: "Tratamiento de Conducto",
-      descripcion: "Endodoncia completa con obturación",
-      precio: 450,
-      categoria: "Endodoncia",
-      activo: true
-    },
-    {
-      id: 4,
-      nombre: "Corona Dental",
-      descripcion: "Corona de porcelana o zirconia",
-      precio: 800,
-      categoria: "Prótesis",
-      activo: true
-    }
-  ]);
-
-  const [formData, setFormData] = useState({
-    nombre: '',
-    descripcion: '',
-    precio: 0,
-    categoria: '',
-    activo: true
-  });
-
   const [selectedCategory, setSelectedCategory] = useState<string>('Todas');
 
-  const categories = useMemo(() => {
-    const unique = Array.from(new Set(services.map(s => s.categoria).filter(Boolean)));
+  const { 
+    services, 
+    categories,
+    isLoading, 
+    error, 
+    fetchServices, 
+    fetchCategories,
+    createService, 
+    updateService, 
+    deleteService,
+    setFilters,
+    clearError 
+  } = useServiceStore();
+
+  // Cargar datos al montar el componente
+  useEffect(() => {
+    fetchServices();
+    fetchCategories();
+  }, [fetchServices, fetchCategories]);
+
+  // Manejar errores
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
+      clearError();
+    }
+  }, [error, clearError]);
+
+  // Aplicar filtros de búsqueda
+  useEffect(() => {
+    setFilters({ search: searchQuery });
+  }, [searchQuery, setFilters]);
+
+  const categoryOptions = useMemo(() => {
+    const unique = Array.from(new Set(services.map(s => s.categorie_service_id).filter(Boolean)));
     return ['Todas', ...unique];
   }, [services]);
 
   const filteredServices = services.filter(service =>
-    (service.nombre.toLowerCase().includes(searchQuery.toLowerCase())) &&
-    (selectedCategory === 'Todas' || service.categoria === selectedCategory)
+    (service.name.toLowerCase().includes(searchQuery.toLowerCase())) &&
+    (selectedCategory === 'Todas' || service.categorie_service_id?.toString() === selectedCategory)
   );
 
-  const handleSubmit = (data: ServiceFormData) => {
-    if (editingService) {
-      setServices(services.map(service =>
-        service.id === editingService.id
-          ? { ...service, ...data, categoria: data.categoria || '' }
-          : service
-      ));
-    } else {
-      const newService: Service = {
-        id: services.length + 1,
-        ...data,
-        categoria: data.categoria || ''
-      };
-      setServices([...services, newService]);
+  const handleSubmit = async (data: ServiceFormData) => {
+    try {
+      if (editingService) {
+        await updateService(editingService.service_id, {
+          name: data.nombre,
+          description: data.descripcion,
+          base_price: data.precio,
+          status: data.activo
+        });
+        toast.success('Servicio actualizado exitosamente');
+      } else {
+        await createService({
+          name: data.nombre,
+          description: data.descripcion,
+          base_price: data.precio,
+          status: data.activo,
+          categorie_service_id: 1 // TODO: Permitir selección de categoría
+        });
+        toast.success('Servicio creado exitosamente');
+      }
+      setEditingService(null);
+      setIsDialogOpen(false);
+    } catch (error) {
+      toast.error('Error al guardar el servicio');
     }
-    setFormData({ nombre: '', descripcion: '', precio: 0, categoria: '', activo: true });
-    setEditingService(null);
-    setIsDialogOpen(false);
   };
 
   const handleEdit = (service: Service) => {
     setEditingService(service);
-    setFormData({
-      nombre: service.nombre,
-      descripcion: service.descripcion,
-      precio: service.precio,
-      categoria: service.categoria,
-      activo: service.activo
-    });
     setIsDialogOpen(true);
   };
 
-  const handleDelete = (serviceId: number) => {
-    setServices(services.filter(service => service.id !== serviceId));
+  const handleDelete = async (serviceId: number) => {
+    try {
+      await deleteService(serviceId);
+      toast.success('Servicio eliminado exitosamente');
+    } catch (error) {
+      toast.error('Error al eliminar el servicio');
+    }
   };
 
-  const toggleServiceStatus = (serviceId: number) => {
-    setServices(services.map(service => 
-      service.id === serviceId 
-        ? { ...service, activo: !service.activo }
-        : service
-    ));
+  const toggleServiceStatus = async (serviceId: number) => {
+    try {
+      const service = services.find(s => s.service_id === serviceId);
+      if (service) {
+        await updateService(serviceId, {
+          status: !service.status
+        });
+        toast.success('Estado del servicio actualizado');
+      }
+    } catch (error) {
+      toast.error('Error al actualizar el estado del servicio');
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="flex items-center gap-2">
+          <Loader2 className="h-6 w-6 animate-spin" />
+          <span>Cargando servicios...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -163,7 +168,6 @@ const ServiceManagement: React.FC<ServiceManagementProps> = ({ onBack }) => {
                 className="bg-sakura-red hover:bg-sakura-red-dark text-white"
                 onClick={() => {
                   setEditingService(null);
-                  setFormData({ nombre: '', descripcion: '', precio: 0, categoria: '', activo: true });
                 }}
               >
                 <Plus className="h-4 w-4 mr-2" />
@@ -177,12 +181,23 @@ const ServiceManagement: React.FC<ServiceManagementProps> = ({ onBack }) => {
                 </DialogTitle>
               </DialogHeader>
               <FormService
-                initialData={formData}
+                                 initialData={editingService ? {
+                   nombre: editingService.name,
+                   descripcion: editingService.description || '',
+                   precio: editingService.base_price,
+                   categoria: editingService.categorie_service_id?.toString() || '',
+                   activo: editingService.status
+                 } : {
+                  nombre: '',
+                  descripcion: '',
+                  precio: 0,
+                  categoria: '',
+                  activo: true
+                }}
                 onSubmit={handleSubmit}
                 onCancel={() => {
                   setIsDialogOpen(false);
                   setEditingService(null);
-                  setFormData({ nombre: '', descripcion: '', precio: 0, categoria: '', activo: true });
                 }}
                 submitButtonText={editingService ? 'Actualizar Servicio' : 'Crear Servicio'}
               />
@@ -198,41 +213,38 @@ const ServiceManagement: React.FC<ServiceManagementProps> = ({ onBack }) => {
           <Input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Buscar servicio por nombre"
-            className="pl-10 h-12 border-sakura-gray-medium focus:border-sakura-red focus:ring-sakura-red/20 rounded-xl"
+            placeholder="Buscar servicios..."
+            className="pl-10"
           />
         </div>
-        <div>
-          <select
-            value={selectedCategory}
-            onChange={e => setSelectedCategory(e.target.value)}
-            className="h-12 px-3 py-2 text-sm rounded-xl border border-sakura-gray-medium focus:border-sakura-red focus:ring-sakura-red/20 bg-white"
-          >
-            {categories.map(cat => (
-              <option key={cat} value={cat}>{cat}</option>
+        
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" className="w-full md:w-auto">
+              Categoría: {selectedCategory}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            {categoryOptions.map((category) => (
+                             <DropdownMenuItem
+                 key={category}
+                 onClick={() => setSelectedCategory(category.toString())}
+               >
+                 {category}
+               </DropdownMenuItem>
             ))}
-          </select>
-        </div>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Services List */}
       <div className="p-4">
-        <div className="mb-4">
-          <p className="text-sm text-gray-600">
-            {filteredServices.length} servicio{filteredServices.length !== 1 ? 's' : ''} encontrado{filteredServices.length !== 1 ? 's' : ''}
-          </p>
-        </div>
         <List
           services={filteredServices}
           onEdit={handleEdit}
-          onToggleStatus={toggleServiceStatus}
           onDelete={handleDelete}
+          onToggleStatus={toggleServiceStatus}
         />
-        {filteredServices.length === 0 && (
-          <Card className="p-8 text-center">
-            <p className="text-gray-500">No se encontraron servicios</p>
-          </Card>
-        )}
       </div>
     </div>
   );

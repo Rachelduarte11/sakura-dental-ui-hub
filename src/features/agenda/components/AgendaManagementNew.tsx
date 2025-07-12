@@ -5,8 +5,6 @@ import { Badge } from '@/shared/components/ui/badge';
 import { Plus, ChevronLeft, ChevronRight, Calendar, Clock, User, Stethoscope, Loader2 } from 'lucide-react';
 import { useAgendaStore, useEmployeeStore, usePatientStore, useServiceStore, type Appointment, type Employee, type Patient, type Service } from '@/shared/stores';
 import { toast } from 'sonner';
-import AppointmentForm from './AppointmentForm';
-import AppointmentModal from './AppointmentModal';
 
 interface CalendarDay {
   date: Date;
@@ -146,26 +144,6 @@ const AgendaManagement: React.FC<AgendaManagementProps> = ({ onBack }) => {
       setSelectedDate(null);
     } catch (error) {
       toast.error('Error al crear la cita');
-    }
-  };
-
-  const handleAppointmentUpdate = async (appointmentId: number, data: any) => {
-    try {
-      await updateAppointment(appointmentId, data);
-      toast.success('Cita actualizada exitosamente');
-      setSelectedAppointment(null);
-    } catch (error) {
-      toast.error('Error al actualizar la cita');
-    }
-  };
-
-  const handleAppointmentDelete = async (appointmentId: number) => {
-    try {
-      await deleteAppointment(appointmentId);
-      toast.success('Cita eliminada exitosamente');
-      setSelectedAppointment(null);
-    } catch (error) {
-      toast.error('Error al eliminar la cita');
     }
   };
 
@@ -360,28 +338,13 @@ const AgendaManagement: React.FC<AgendaManagementProps> = ({ onBack }) => {
         </>
       )}
 
-      {/* Appointment Form Modal */}
-      {showAppointmentForm && (
-        <AppointmentForm
-          selectedDate={selectedDate}
-          employees={employees}
-          patients={patients}
-          services={services}
-          onSubmit={handleAppointmentSubmit}
-          onClose={() => {
-            setShowAppointmentForm(false);
-            setSelectedDate(null);
-          }}
-        />
-      )}
-
-      {/* Appointment Details Modal */}
+      {/* Appointment Modal */}
       {selectedAppointment && (
         <AppointmentModal
           appointment={selectedAppointment}
           onClose={() => setSelectedAppointment(null)}
-          onUpdate={handleAppointmentUpdate}
-          onDelete={handleAppointmentDelete}
+          onUpdate={updateAppointment}
+          onDelete={deleteAppointment}
           patients={patients}
           employees={employees}
           services={services}

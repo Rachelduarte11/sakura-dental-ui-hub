@@ -1,15 +1,13 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import PatientQuoteSelector from './PatientQuoteSelector';
 import QuotePaymentProcessor from './QuotePaymentProcessor';
+import { useQuotationStore, usePatientStore, type Quotation, type Patient as StorePatient } from '@/shared/stores';
+import { toast } from 'sonner';
 
-interface QuoteService {
-  id: number;
-  name: string;
-  price: number;
-  category: string;
-}
+type SalesStep = 'select' | 'process';
 
+// Tipos esperados por QuotePaymentProcessor
 interface Quote {
   id: number;
   patientId: number;
@@ -17,6 +15,13 @@ interface Quote {
   total: number;
   status: 'pending' | 'partial' | 'completed';
   services: QuoteService[];
+}
+
+interface QuoteService {
+  id: number;
+  name: string;
+  price: number;
+  category: string;
 }
 
 interface Patient {
@@ -28,44 +33,101 @@ interface Patient {
   dni: string;
 }
 
-type SalesStep = 'select' | 'process';
-
 const SalesModule: React.FC = () => {
   const [currentStep, setCurrentStep] = useState<SalesStep>('select');
-  const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
+  const [selectedQuotation, setSelectedQuotation] = useState<Quote | null>(null);
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
 
-  const handleQuoteSelect = (quote: Quote) => {
+  const { 
+    quotations, 
+    isLoading: quotationsLoading, 
+    error: quotationsError, 
+    fetchQuotations, 
+    clearError: clearQuotationsError 
+  } = useQuotationStore();
+
+  const { 
+    patients, 
+    isLoading: patientsLoading, 
+    error: patientsError, 
+    fetchPatients, 
+    clearError: clearPatientsError 
+  } = usePatientStore();
+
+  // Cargar datos al montar el componente
+  useEffect(() => {
+    fetchQuotations();
+    fetchPatients();
+  }, [fetchQuotations, fetchPatients]);
+
+  // Manejar errores
+  useEffect(() => {
+    if (quotationsError) {
+      toast.error(quotationsError);
+      clearQuotationsError();
+    }
+    if (patientsError) {
+      toast.error(patientsError);
+      clearPatientsError();
+    }
+  }, [quotationsError, patientsError, clearQuotationsError, clearPatientsError]);
+
+  const handleQuoteSelect = (quotation: Quotation) => {
     // Buscar el paciente correspondiente a la cotización
-    const patients: Patient[] = [
-      { id: 1, name: 'María García López', phone: '999-123-456', email: 'maria@email.com', medicalHistory: 'MH001', dni: '12345678' },
-      { id: 2, name: 'Carlos Rodríguez Pérez', phone: '999-789-123', email: 'carlos@email.com', medicalHistory: 'MH002', dni: '87654321' },
-      { id: 3, name: 'Ana Martínez Silva', phone: '999-456-789', email: 'ana@email.com', medicalHistory: 'MH003', dni: '11223344' },
-      { id: 4, name: 'Luis Fernández Torres', phone: '999-321-654', email: 'luis@email.com', medicalHistory: 'MH004', dni: '44332211' },
-    ];
-    
-    const patient = patients.find(p => p.id === quote.patientId);
-    if (patient) {
-      setSelectedQuote(quote);
-      setSelectedPatient(patient);
+    const storePatient = patients.find(p => p.patient_id === quotation.patient_id);
+    if (storePatient) {
+      // Mapear datos de la store a los tipos esperados por QuotePaymentProcessor
+      const mappedQuote: Quote = {
+        id: quotation.quotation_id,
+        patientId: quotation.patient_id,
+        date: quotation.created_at,
+        total: quotation.total_amount,
+        status: quotation.status === 'PENDIENTE' ? 'pending' : 
+                quotation.status === 'PAGADA' ? 'completed' : 'partial',
+        services: quotation.items?.map(item => ({
+          id: item.item_id,
+          name: 'Servicio', // TODO: Obtener nombre del servicio desde la store de servicios
+          price: item.unit_price,
+          category: 'General'
+        })) || []
+      };
+
+      const mappedPatient: Patient = {
+        id: storePatient.patient_id,
+        name: `${storePatient.first_name} ${storePatient.last_name}`,
+        phone: storePatient.phone || '',
+        email: storePatient.email || '',
+        medicalHistory: 'Sin historial', // TODO: Agregar campo de historial médico
+        dni: storePatient.doc_number || ''
+      };
+
+      setSelectedQuotation(mappedQuote);
+      setSelectedPatient(mappedPatient);
       setCurrentStep('process');
     }
   };
 
   const handleBack = () => {
     setCurrentStep('select');
-    setSelectedQuote(null);
+    setSelectedQuotation(null);
     setSelectedPatient(null);
   };
 
+  const isLoading = quotationsLoading || patientsLoading;
+
   return (
     <div className="p-6">
-      {currentStep === 'select' ? (
+      {isLoading ? (
+        <div className="flex items-center justify-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-sakura-red"></div>
+          <span className="ml-2 text-sakura-gray">Cargando datos...</span>
+        </div>
+      ) : currentStep === 'select' ? (
         <PatientQuoteSelector onQuoteSelect={handleQuoteSelect} />
       ) : (
-        selectedQuote && selectedPatient && (
+        selectedQuotation && selectedPatient && (
           <QuotePaymentProcessor
-            quote={selectedQuote}
+            quote={selectedQuotation}
             patient={selectedPatient}
             onBack={handleBack}
           />

@@ -1,13 +1,17 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/shared/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Badge } from '@/shared/components/ui/badge';
 import { Switch } from '@/shared/components/ui/switch';
 import { Label } from '@/shared/components/ui/label';
-import { ArrowUp, Shield, Users, Settings, Image, Globe, Lock, Bell, Link, Key, Sun, Moon } from 'lucide-react';
+import { ArrowUp, Shield, Users, Settings, Image, Globe, Lock, Bell, Link, Key, Sun, Moon, Loader2, Plus, Edit, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useMasterDataStore, type District, type Gender, type DocumentType } from '@/shared/stores';
+import { toast } from 'sonner';
+import { Input } from '@/shared/components/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/shared/components/ui/dialog';
 
 interface Permission {
   id: string;
@@ -33,6 +37,7 @@ const SECTIONS = [
   { id: 'appearance', label: 'Apariencia', icon: Sun },
   { id: 'notifications', label: 'Notificaciones', icon: Bell },
   { id: 'integrations', label: 'Integraciones', icon: Link },
+  { id: 'masterdata', label: 'Datos Maestros', icon: Globe },
 ];
 
 const SettingsManagement: React.FC<SettingsManagementProps> = ({ onBack }) => {
@@ -48,6 +53,50 @@ const SettingsManagement: React.FC<SettingsManagementProps> = ({ onBack }) => {
   const [email, setEmail] = useState('admin@sakura.com');
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [twoFactor, setTwoFactor] = useState(false);
+
+  // Master data management
+  const [isAddDistrictOpen, setIsAddDistrictOpen] = useState(false);
+  const [isAddGenderOpen, setIsAddGenderOpen] = useState(false);
+  const [isAddDocumentTypeOpen, setIsAddDocumentTypeOpen] = useState(false);
+  const [newDistrict, setNewDistrict] = useState({ name: '', status: true });
+  const [newGender, setNewGender] = useState({ code: '', name: '', status: true });
+  const [newDocumentType, setNewDocumentType] = useState({ code: '', name: '', status: true });
+
+  const { 
+    districts, 
+    genders, 
+    documentTypes,
+    isLoading,
+    error,
+    fetchDistricts, 
+    fetchGenders, 
+    fetchDocumentTypes,
+    createDistrict,
+    createGender,
+    createDocumentType,
+    updateDistrict,
+    updateGender,
+    updateDocumentType,
+    deleteDistrict,
+    deleteGender,
+    deleteDocumentType,
+    clearError 
+  } = useMasterDataStore();
+
+  // Cargar datos maestros al montar el componente
+  useEffect(() => {
+    fetchDistricts();
+    fetchGenders();
+    fetchDocumentTypes();
+  }, [fetchDistricts, fetchGenders, fetchDocumentTypes]);
+
+  // Manejar errores
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
+      clearError();
+    }
+  }, [error, clearError]);
 
   // Permisos disponibles
   const permissions: Permission[] = [
@@ -175,6 +224,66 @@ const SettingsManagement: React.FC<SettingsManagementProps> = ({ onBack }) => {
       router.push('/home');
     }
   };
+
+  // Master data handlers
+  const handleAddDistrict = async () => {
+    if (!newDistrict.name) {
+      toast.error('Por favor ingrese el nombre del distrito');
+      return;
+    }
+
+    try {
+      await createDistrict(newDistrict);
+      toast.success('Distrito agregado exitosamente');
+      setNewDistrict({ name: '', status: true });
+      setIsAddDistrictOpen(false);
+    } catch (error) {
+      toast.error('Error al agregar distrito');
+    }
+  };
+
+  const handleAddGender = async () => {
+    if (!newGender.code || !newGender.name) {
+      toast.error('Por favor complete todos los campos');
+      return;
+    }
+
+    try {
+      await createGender(newGender);
+      toast.success('Género agregado exitosamente');
+      setNewGender({ code: '', name: '', status: true });
+      setIsAddGenderOpen(false);
+    } catch (error) {
+      toast.error('Error al agregar género');
+    }
+  };
+
+  const handleAddDocumentType = async () => {
+    if (!newDocumentType.code || !newDocumentType.name) {
+      toast.error('Por favor complete todos los campos');
+      return;
+    }
+
+    try {
+      await createDocumentType(newDocumentType);
+      toast.success('Tipo de documento agregado exitosamente');
+      setNewDocumentType({ code: '', name: '', status: true });
+      setIsAddDocumentTypeOpen(false);
+    } catch (error) {
+      toast.error('Error al agregar tipo de documento');
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="flex items-center gap-2">
+          <Loader2 className="h-6 w-6 animate-spin" />
+          <span>Cargando configuración...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -414,6 +523,187 @@ const SettingsManagement: React.FC<SettingsManagementProps> = ({ onBack }) => {
                 </div>
               </CardContent>
             </Card>
+          )}
+
+          {activeSection === 'masterdata' && (
+            <div className="space-y-6">
+              {/* Districts Management */}
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2">
+                      <Globe className="h-5 w-5" />
+                      Distritos
+                    </CardTitle>
+                    <Dialog open={isAddDistrictOpen} onOpenChange={setIsAddDistrictOpen}>
+                      <DialogTrigger asChild>
+                        <Button size="sm" className="bg-sakura-red hover:bg-sakura-red-dark">
+                          <Plus className="h-4 w-4 mr-2" />
+                          Agregar Distrito
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Nuevo Distrito</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <div>
+                            <Label htmlFor="district-name">Nombre</Label>
+                            <Input
+                              id="district-name"
+                              value={newDistrict.name}
+                              onChange={(e) => setNewDistrict({ ...newDistrict, name: e.target.value })}
+                              placeholder="Ingrese el nombre del distrito"
+                            />
+                          </div>
+                          <Button onClick={handleAddDistrict} className="w-full">
+                            Agregar Distrito
+                          </Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {districts.map((district) => (
+                      <div key={district.district_id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <span className="font-medium">{district.name}</span>
+                        <Badge variant={district.status ? 'default' : 'secondary'}>
+                          {district.status ? 'Activo' : 'Inactivo'}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Genders Management */}
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2">
+                      <Users className="h-5 w-5" />
+                      Géneros
+                    </CardTitle>
+                    <Dialog open={isAddGenderOpen} onOpenChange={setIsAddGenderOpen}>
+                      <DialogTrigger asChild>
+                        <Button size="sm" className="bg-sakura-red hover:bg-sakura-red-dark">
+                          <Plus className="h-4 w-4 mr-2" />
+                          Agregar Género
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Nuevo Género</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <div>
+                            <Label htmlFor="gender-code">Código</Label>
+                            <Input
+                              id="gender-code"
+                              value={newGender.code}
+                              onChange={(e) => setNewGender({ ...newGender, code: e.target.value })}
+                              placeholder="M/F/O"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="gender-name">Nombre</Label>
+                            <Input
+                              id="gender-name"
+                              value={newGender.name}
+                              onChange={(e) => setNewGender({ ...newGender, name: e.target.value })}
+                              placeholder="Masculino/Femenino/Otro"
+                            />
+                          </div>
+                          <Button onClick={handleAddGender} className="w-full">
+                            Agregar Género
+                          </Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {genders.map((gender) => (
+                      <div key={gender.gender_id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div>
+                          <span className="font-medium">{gender.name}</span>
+                          <span className="text-sm text-gray-500 ml-2">({gender.code})</span>
+                        </div>
+                        <Badge variant={gender.status ? 'default' : 'secondary'}>
+                          {gender.status ? 'Activo' : 'Inactivo'}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Document Types Management */}
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2">
+                      <Key className="h-5 w-5" />
+                      Tipos de Documento
+                    </CardTitle>
+                    <Dialog open={isAddDocumentTypeOpen} onOpenChange={setIsAddDocumentTypeOpen}>
+                      <DialogTrigger asChild>
+                        <Button size="sm" className="bg-sakura-red hover:bg-sakura-red-dark">
+                          <Plus className="h-4 w-4 mr-2" />
+                          Agregar Tipo
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Nuevo Tipo de Documento</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <div>
+                            <Label htmlFor="doc-code">Código</Label>
+                            <Input
+                              id="doc-code"
+                              value={newDocumentType.code}
+                              onChange={(e) => setNewDocumentType({ ...newDocumentType, code: e.target.value })}
+                              placeholder="DNI/CE/PAS"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="doc-name">Nombre</Label>
+                            <Input
+                              id="doc-name"
+                              value={newDocumentType.name}
+                              onChange={(e) => setNewDocumentType({ ...newDocumentType, name: e.target.value })}
+                              placeholder="Documento Nacional de Identidad"
+                            />
+                          </div>
+                          <Button onClick={handleAddDocumentType} className="w-full">
+                            Agregar Tipo
+                          </Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {documentTypes.map((docType) => (
+                      <div key={docType.document_type_id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div>
+                          <span className="font-medium">{docType.name}</span>
+                          <span className="text-sm text-gray-500 ml-2">({docType.code})</span>
+                        </div>
+                        <Badge variant={docType.status ? 'default' : 'secondary'}>
+                          {docType.status ? 'Activo' : 'Inactivo'}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           )}
         </main>
       </div>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/shared/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Badge } from '@/shared/components/ui/badge';
@@ -9,94 +9,62 @@ import {
   FileText,
   Calendar,
   DollarSign,
-  ArrowRight
+  ArrowRight,
+  Loader2
 } from 'lucide-react';
-
-interface Patient {
-  id: number;
-  name: string;
-  phone: string;
-  email: string;
-  medicalHistory: string;
-  dni: string;
-}
-
-interface Quote {
-  id: number;
-  patientId: number;
-  date: string;
-  total: number;
-  status: 'pending' | 'partial' | 'completed';
-  services: QuoteService[];
-}
-
-interface QuoteService {
-  id: number;
-  name: string;
-  price: number;
-  category: string;
-}
+import { useQuotationStore, usePatientStore, type Quotation, type Patient } from '@/shared/stores';
+import { toast } from 'sonner';
 
 interface PatientQuoteSelectorProps {
-  onQuoteSelect: (quote: Quote) => void;
+  onQuoteSelect: (quotation: Quotation) => void;
 }
 
 const PatientQuoteSelector: React.FC<PatientQuoteSelectorProps> = ({ onQuoteSelect }) => {
   const [patientSearch, setPatientSearch] = useState('');
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
 
-  // Mock data
-  const patients: Patient[] = [
-    { id: 1, name: 'María García López', phone: '999-123-456', email: 'maria@email.com', medicalHistory: 'MH001', dni: '12345678' },
-    { id: 2, name: 'Carlos Rodríguez Pérez', phone: '999-789-123', email: 'carlos@email.com', medicalHistory: 'MH002', dni: '87654321' },
-    { id: 3, name: 'Ana Martínez Silva', phone: '999-456-789', email: 'ana@email.com', medicalHistory: 'MH003', dni: '11223344' },
-    { id: 4, name: 'Luis Fernández Torres', phone: '999-321-654', email: 'luis@email.com', medicalHistory: 'MH004', dni: '44332211' },
-  ];
+  const { 
+    quotations, 
+    isLoading: quotationsLoading, 
+    error: quotationsError, 
+    fetchQuotations, 
+    clearError: clearQuotationsError 
+  } = useQuotationStore();
 
-  const quotes: Quote[] = [
-    {
-      id: 1,
-      patientId: 1,
-      date: '2024-01-15',
-      total: 450,
-      status: 'partial',
-      services: [
-        { id: 1, name: 'Limpieza Dental', price: 80, category: 'Preventivo' },
-        { id: 2, name: 'Empaste', price: 120, category: 'Restaurativo' },
-        { id: 3, name: 'Corona Dental', price: 300, category: 'Protésico' },
-      ]
-    },
-    {
-      id: 2,
-      patientId: 1,
-      date: '2024-01-20',
-      total: 200,
-      status: 'pending',
-      services: [
-        { id: 4, name: 'Blanqueamiento', price: 200, category: 'Estético' },
-      ]
-    },
-    {
-      id: 3,
-      patientId: 2,
-      date: '2024-01-18',
-      total: 370,
-      status: 'pending',
-      services: [
-        { id: 5, name: 'Endodoncia', price: 250, category: 'Especialidad' },
-        { id: 6, name: 'Extracción', price: 150, category: 'Cirugía' },
-      ]
+  const { 
+    patients, 
+    isLoading: patientsLoading, 
+    error: patientsError, 
+    fetchPatients, 
+    clearError: clearPatientsError 
+  } = usePatientStore();
+
+  // Cargar datos al montar el componente
+  useEffect(() => {
+    fetchQuotations();
+    fetchPatients();
+  }, [fetchQuotations, fetchPatients]);
+
+  // Manejar errores
+  useEffect(() => {
+    if (quotationsError) {
+      toast.error(quotationsError);
+      clearQuotationsError();
     }
-  ];
+    if (patientsError) {
+      toast.error(patientsError);
+      clearPatientsError();
+    }
+  }, [quotationsError, patientsError, clearQuotationsError, clearPatientsError]);
 
   const filteredPatients = patients.filter(patient =>
-    patient.name.toLowerCase().includes(patientSearch.toLowerCase()) ||
-    patient.phone.includes(patientSearch) ||
-    patient.medicalHistory.toLowerCase().includes(patientSearch.toLowerCase())
+    `${patient.first_name} ${patient.last_name}`.toLowerCase().includes(patientSearch.toLowerCase()) ||
+    patient.phone?.includes(patientSearch) ||
+    patient.doc_number?.includes(patientSearch)
   );
 
   const patientQuotes = selectedPatient 
-    ? quotes.filter(quote => quote.patientId === selectedPatient.id)
+    ? quotations.filter(quotation => quotation.patient_id === selectedPatient.patient_id)
     : [];
 
   const getStatusColor = (status: string) => {
@@ -146,22 +114,22 @@ const PatientQuoteSelector: React.FC<PatientQuoteSelectorProps> = ({ onQuoteSele
             <div className="mt-4 space-y-2">
               {filteredPatients.map((patient) => (
                 <div
-                  key={patient.id}
+                  key={patient.patient_id}
                   onClick={() => setSelectedPatient(patient)}
                   className={`p-3 rounded-lg border cursor-pointer transition-colors ${
-                    selectedPatient?.id === patient.id
+                    selectedPatient?.patient_id === patient.patient_id
                       ? 'border-sakura-red bg-sakura-red/5'
                       : 'border-gray-200 hover:border-sakura-red/50 hover:bg-gray-50'
                   }`}
                 >
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="font-medium text-gray-900">{patient.name}</h3>
+                      <h3 className="font-medium text-gray-900">{patient.first_name} {patient.last_name}</h3>
                       <p className="text-sm text-gray-500">
-                        {patient.phone} • {patient.medicalHistory}
+                        {patient.phone} • {patient.doc_number}
                       </p>
                     </div>
-                    {selectedPatient?.id === patient.id && (
+                    {selectedPatient?.patient_id === patient.patient_id && (
                       <Badge className="bg-sakura-red text-white">Seleccionado</Badge>
                     )}
                   </div>
@@ -178,48 +146,48 @@ const PatientQuoteSelector: React.FC<PatientQuoteSelectorProps> = ({ onQuoteSele
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5" />
-              Cotizaciones de {selectedPatient.name}
+              Cotizaciones de {selectedPatient.first_name} {selectedPatient.last_name}
             </CardTitle>
           </CardHeader>
           <CardContent>
             {patientQuotes.length > 0 ? (
               <div className="space-y-4">
-                {patientQuotes.map((quote) => (
+                {patientQuotes.map((quotation) => (
                   <div
-                    key={quote.id}
+                    key={quotation.quotation_id}
                     className="p-4 border border-gray-200 rounded-lg hover:border-sakura-red/50 hover:shadow-md transition-all cursor-pointer"
-                    onClick={() => onQuoteSelect(quote)}
+                    onClick={() => onQuoteSelect(quotation)}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-4 mb-2">
                           <h3 className="font-medium text-gray-900">
-                            Cotización #{quote.id}
+                            Cotización #{quotation.quotation_id}
                           </h3>
-                          <Badge className={getStatusColor(quote.status)}>
-                            {getStatusText(quote.status)}
+                          <Badge className={getStatusColor(quotation.status)}>
+                            {getStatusText(quotation.status)}
                           </Badge>
                         </div>
                         
                         <div className="flex items-center gap-6 text-sm text-gray-500">
                           <div className="flex items-center gap-1">
                             <Calendar className="h-4 w-4" />
-                            {new Date(quote.date).toLocaleDateString('es-ES')}
+                            {new Date(quotation.created_at).toLocaleDateString('es-ES')}
                           </div>
                           <div className="flex items-center gap-1">
                             <DollarSign className="h-4 w-4" />
-                            S/ {quote.total}
+                            S/ {quotation.total_amount}
                           </div>
                           <div>
-                            {quote.services.length} servicio{quote.services.length !== 1 ? 's' : ''}
+                            {quotation.items?.length || 0} servicio{(quotation.items?.length || 0) !== 1 ? 's' : ''}
                           </div>
                         </div>
 
-                        <div className="mt-2">
-                          <p className="text-sm text-gray-600">
-                            {quote.services.map(s => s.name).join(', ')}
-                          </p>
-                        </div>
+                                                  <div className="mt-2">
+                            <p className="text-sm text-gray-600">
+                              {quotation.items?.length ? 'Servicios incluidos' : 'Sin servicios'}
+                            </p>
+                          </div>
                       </div>
                       
                       <ArrowRight className="h-5 w-5 text-gray-400" />
