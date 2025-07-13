@@ -18,7 +18,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/shared/components/ui/dropdown-menu';
-import { usePatientStore, useMasterDataStore, type Patient } from '@/shared/stores';
+import { usePatientStore, type Patient } from '@/shared/stores';
+import { useMasterData } from '@/shared/hooks';
 import { EmptyPatients } from '@/shared/components';
 import PatientForm from '../components/PatientForm';
 import { toast } from 'sonner';
@@ -36,7 +37,7 @@ const PatientManagement: React.FC<PatientManagementProps> = ({ onBack, onPatient
     firstName: '',
     lastName: '',
     email: '',
-    phoneNumber: '',
+    phone: '',
     birthDate: '',
     dni: '',
     districtId: 0,
@@ -61,14 +62,14 @@ const PatientManagement: React.FC<PatientManagementProps> = ({ onBack, onPatient
     districts, 
     genders, 
     documentTypes, 
-    fetchAllMasterData 
-  } = useMasterDataStore();
+    loadAllMasterData 
+  } = useMasterData();
 
   // Cargar datos al montar el componente
   useEffect(() => {
     fetchPatients();
-    fetchAllMasterData();
-  }, [fetchPatients, fetchAllMasterData]);
+    // loadAllMasterData is called automatically by the hook
+  }, [fetchPatients]);
 
   // Manejar errores
   useEffect(() => {
@@ -84,9 +85,9 @@ const PatientManagement: React.FC<PatientManagementProps> = ({ onBack, onPatient
   }, [searchQuery, setFilters]);
 
   const filteredPatients = patients.filter(patient =>
-    `${patient.first_name} ${patient.last_name}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    `${patient.firstName} ${patient.lastName}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
     patient.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    patient.doc_number?.toLowerCase().includes(searchQuery.toLowerCase())
+    patient.dni?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -94,7 +95,7 @@ const PatientManagement: React.FC<PatientManagementProps> = ({ onBack, onPatient
     
     try {
       if (editingPatient) {
-        await updatePatient(editingPatient.patient_id, formData);
+        await updatePatient(editingPatient.patientId, formData);
         toast.success('Paciente actualizado exitosamente');
       } else {
         await createPatient(formData);
@@ -111,15 +112,15 @@ const PatientManagement: React.FC<PatientManagementProps> = ({ onBack, onPatient
   const handleEdit = (patient: Patient) => {
     setEditingPatient(patient);
     setFormData({
-      firstName: patient.first_name || patient.firstName || '',
-      lastName: patient.last_name || patient.lastName || '',
+      firstName: patient.firstName || '',
+      lastName: patient.lastName || '',
       email: patient.email || '',
-      phoneNumber: patient.phone || '',
-      birthDate: patient.birth_date || patient.birthDate || '',
-      dni: patient.doc_number || patient.dni || '',
-      districtId: patient.district_id || patient.districtId || 0,
-      genderId: patient.gender_id || patient.genderId || 0,
-      documentTypeId: patient.document_type_id || patient.documentTypeId || 0,
+      phone: patient.phone || '',
+      birthDate: patient.birthDate || '',
+      dni: patient.dni || '',
+      districtId: patient.districtId || 0,
+      genderId: patient.genderId || 0,
+      documentTypeId: patient.documentTypeId || 0,
       status: patient.status
     });
     setIsDialogOpen(true);
@@ -139,7 +140,7 @@ const PatientManagement: React.FC<PatientManagementProps> = ({ onBack, onPatient
       firstName: '',
       lastName: '',
       email: '',
-      phoneNumber: '',
+      phone: '',
       birthDate: '',
       dni: '',
       districtId: 0,
@@ -151,22 +152,22 @@ const PatientManagement: React.FC<PatientManagementProps> = ({ onBack, onPatient
   };
 
   const PatientCard = ({ patient }: { patient: Patient }) => (
-    <Card className="mb-4 shadow-sm border-sakura-gray-medium/30 hover:shadow-md transition-shadow cursor-pointer" onClick={() => onPatientClick(patient.patient_id)}>
+    <Card className="mb-4 shadow-sm border-sakura-gray-medium/30 hover:shadow-md transition-shadow cursor-pointer" onClick={() => onPatientClick(patient.patientId)}>
       <CardContent className="p-4">
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-2">
               <User className="h-4 w-4 text-sakura-red" />
               <h3 className="font-semibold text-gray-800 text-lg">
-                {patient.first_name} {patient.last_name}
+                {patient.firstName} {patient.lastName}
               </h3>
             </div>
             <div className="space-y-1 text-sm text-gray-600">
               {patient.email && <p><strong>Email:</strong> {patient.email}</p>}
               {patient.phone && <p><strong>Teléfono:</strong> {patient.phone}</p>}
-              {patient.doc_number && <p><strong>DNI:</strong> {patient.doc_number}</p>}
-              {patient.birth_date && <p><strong>Fecha de nacimiento:</strong> {new Date(patient.birth_date).toLocaleDateString()}</p>}
-              <p><strong>Registro:</strong> {new Date(patient.created_at).toLocaleDateString()}</p>
+              {patient.dni && <p><strong>DNI:</strong> {patient.dni}</p>}
+              {patient.birthDate && <p><strong>Fecha de nacimiento:</strong> {new Date(patient.birthDate).toLocaleDateString()}</p>}
+              <p><strong>Registro:</strong> {new Date(patient.createdAt).toLocaleDateString()}</p>
             </div>
             <Badge variant={patient.status ? "default" : "secondary"} className="mt-2">
               {patient.status ? 'Activo' : 'Inactivo'}
@@ -193,7 +194,7 @@ const PatientManagement: React.FC<PatientManagementProps> = ({ onBack, onPatient
               </DropdownMenuItem>
               <DropdownMenuItem onClick={(e) => {
                 e.stopPropagation();
-                handleDelete(patient.patient_id);
+                handleDelete(patient.patientId);
               }} className="text-red-600">
                 <Trash2 className="h-4 w-4 mr-2" />
                 Eliminar

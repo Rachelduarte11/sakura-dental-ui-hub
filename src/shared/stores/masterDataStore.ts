@@ -138,16 +138,31 @@ export const useMasterDataStore = create<MasterDataState & MasterDataActions>((s
   fetchAllMasterData: async () => {
     set({ isLoading: true, error: null });
     try {
-      await Promise.all([
-        get().fetchDistricts(),
-        get().fetchGenders(),
-        get().fetchDocumentTypes(),
-        get().fetchPaymentMethods(),
-        get().fetchJobTitles(),
-        get().fetchCategories(),
-      ]);
+      // Make requests sequential instead of parallel to avoid concurrency issues
+      console.log('🔄 fetchAllMasterData: Iniciando carga secuencial de datos maestros...');
+      
+      await get().fetchDistricts();
+      // Add delay between requests to avoid overwhelming the backend
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      await get().fetchGenders();
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      await get().fetchDocumentTypes();
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      await get().fetchPaymentMethods();
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      await get().fetchJobTitles();
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      await get().fetchCategories();
+      
+      console.log('✅ fetchAllMasterData: Todos los datos maestros cargados exitosamente');
       set({ isLoading: false });
     } catch (error) {
+      console.error('❌ fetchAllMasterData: Error cargando datos maestros:', error);
       set({
         error: error instanceof Error ? error.message : 'Error desconocido',
         isLoading: false,
@@ -158,16 +173,31 @@ export const useMasterDataStore = create<MasterDataState & MasterDataActions>((s
   // --- DISTRICTS ---
   fetchDistricts: async () => {
     console.log('🔄 fetchDistricts: Iniciando llamada a API...');
-    try {
-      const { data } = await apiClient.get('/api/districts');
-      console.log('✅ fetchDistricts: Respuesta exitosa:', data);
-      set((state) => ({
-        districts: data as District[],
-        lastUpdated: { ...state.lastUpdated, districts: new Date().toISOString() },
-      }));
-    } catch (error) {
-      console.error('❌ fetchDistricts: Error en API:', error);
-      set({ error: error instanceof Error ? error.message : 'Error desconocido' });
+    const maxRetries = 3;
+    let retryCount = 0;
+    
+    while (retryCount < maxRetries) {
+      try {
+        const { data } = await apiClient.get('/api/districts');
+        console.log('✅ fetchDistricts: Respuesta exitosa:', data);
+        set((state) => ({
+          districts: data as District[],
+          lastUpdated: { ...state.lastUpdated, districts: new Date().toISOString() },
+        }));
+        return; // Success, exit retry loop
+      } catch (error) {
+        retryCount++;
+        console.error(`❌ fetchDistricts: Intento ${retryCount}/${maxRetries} falló:`, error);
+        
+        if (retryCount >= maxRetries) {
+          console.error('❌ fetchDistricts: Todos los intentos fallaron');
+          set({ error: error instanceof Error ? error.message : 'Error desconocido' });
+          return;
+        }
+        
+        // Wait before retrying (exponential backoff)
+        await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+      }
     }
   },
   createDistrict: async (district) => {
@@ -210,16 +240,31 @@ export const useMasterDataStore = create<MasterDataState & MasterDataActions>((s
   // --- GENDERS ---
   fetchGenders: async () => {
     console.log('🔄 fetchGenders: Iniciando llamada a API...');
-    try {
-      const { data } = await apiClient.get('/api/genders');
-      console.log('✅ fetchGenders: Respuesta exitosa:', data);
-      set((state) => ({
-        genders: data as Gender[],
-        lastUpdated: { ...state.lastUpdated, genders: new Date().toISOString() },
-      }));
-    } catch (error) {
-      console.error('❌ fetchGenders: Error en API:', error);
-      set({ error: error instanceof Error ? error.message : 'Error desconocido' });
+    const maxRetries = 3;
+    let retryCount = 0;
+    
+    while (retryCount < maxRetries) {
+      try {
+        const { data } = await apiClient.get('/api/genders');
+        console.log('✅ fetchGenders: Respuesta exitosa:', data);
+        set((state) => ({
+          genders: data as Gender[],
+          lastUpdated: { ...state.lastUpdated, genders: new Date().toISOString() },
+        }));
+        return; // Success, exit retry loop
+      } catch (error) {
+        retryCount++;
+        console.error(`❌ fetchGenders: Intento ${retryCount}/${maxRetries} falló:`, error);
+        
+        if (retryCount >= maxRetries) {
+          console.error('❌ fetchGenders: Todos los intentos fallaron');
+          set({ error: error instanceof Error ? error.message : 'Error desconocido' });
+          return;
+        }
+        
+        // Wait before retrying (exponential backoff)
+        await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+      }
     }
   },
   createGender: async (gender) => {
@@ -262,22 +307,37 @@ export const useMasterDataStore = create<MasterDataState & MasterDataActions>((s
   // --- DOCUMENT TYPES ---
   fetchDocumentTypes: async () => {
     console.log('🔄 fetchDocumentTypes: Iniciando llamada a API...');
-    try {
-      const { data } = await apiClient.get('/api/document-types');
-      console.log('✅ fetchDocumentTypes: Respuesta exitosa:', data);
-      set((state) => ({
-        documentTypes: data as DocumentType[],
-        lastUpdated: { ...state.lastUpdated, documentTypes: new Date().toISOString() },
-      }));
-    } catch (error) {
-      console.error('❌ fetchDocumentTypes: Error en API:', error);
-      set({ error: error instanceof Error ? error.message : 'Error desconocido' });
+    const maxRetries = 3;
+    let retryCount = 0;
+    
+    while (retryCount < maxRetries) {
+      try {
+        const { data } = await apiClient.get('/api/document-type');
+        console.log('✅ fetchDocumentTypes: Respuesta exitosa:', data);
+        set((state) => ({
+          documentTypes: data as DocumentType[],
+          lastUpdated: { ...state.lastUpdated, documentTypes: new Date().toISOString() },
+        }));
+        return; // Success, exit retry loop
+      } catch (error) {
+        retryCount++;
+        console.error(`❌ fetchDocumentTypes: Intento ${retryCount}/${maxRetries} falló:`, error);
+        
+        if (retryCount >= maxRetries) {
+          console.error('❌ fetchDocumentTypes: Todos los intentos fallaron');
+          set({ error: error instanceof Error ? error.message : 'Error desconocido' });
+          return;
+        }
+        
+        // Wait before retrying (exponential backoff)
+        await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+      }
     }
   },
   createDocumentType: async (documentType) => {
     set({ isLoading: true, error: null });
     try {
-      const { data: newDocumentType } = await apiClient.post('/api/document-types', documentType);
+      const { data: newDocumentType } = await apiClient.post('/api/document-type', documentType);
       set((state) => ({
         documentTypes: [...state.documentTypes, newDocumentType as DocumentType],
         isLoading: false,
@@ -289,7 +349,7 @@ export const useMasterDataStore = create<MasterDataState & MasterDataActions>((s
   updateDocumentType: async (id, documentType) => {
     set({ isLoading: true, error: null });
     try {
-      const { data: updatedDocumentType } = await apiClient.put(`/api/document-types/${id}`, documentType);
+      const { data: updatedDocumentType } = await apiClient.put(`/api/document-type/${id}`, documentType);
       set((state) => ({
         documentTypes: state.documentTypes.map((dt) => dt.documentTypeId === id ? updatedDocumentType as DocumentType : dt),
         isLoading: false,
@@ -301,7 +361,7 @@ export const useMasterDataStore = create<MasterDataState & MasterDataActions>((s
   deleteDocumentType: async (id) => {
     set({ isLoading: true, error: null });
     try {
-      await apiClient.delete(`/api/document-types/${id}`);
+      await apiClient.delete(`/api/document-type/${id}`);
       set((state) => ({
         documentTypes: state.documentTypes.filter((dt) => dt.documentTypeId !== id),
         isLoading: false,
@@ -313,38 +373,94 @@ export const useMasterDataStore = create<MasterDataState & MasterDataActions>((s
 
   // --- PAYMENT METHODS ---
   fetchPaymentMethods: async () => {
-    try {
-      const { data } = await apiClient.get(`${API_BASE_URL}/api/master-data/payment-methods`);
-      set((state) => ({
-        paymentMethods: data as PaymentMethod[],
-        lastUpdated: { ...state.lastUpdated, paymentMethods: new Date().toISOString() },
-      }));
-    } catch (error) {
-      set({ error: error instanceof Error ? error.message : 'Error desconocido' });
+    console.log('🔄 fetchPaymentMethods: Iniciando llamada a API...');
+    const maxRetries = 3;
+    let retryCount = 0;
+    
+    while (retryCount < maxRetries) {
+      try {
+        const { data } = await apiClient.get('/api/master-data/payment-methods');
+        console.log('✅ fetchPaymentMethods: Respuesta exitosa:', data);
+        set((state) => ({
+          paymentMethods: data as PaymentMethod[],
+          lastUpdated: { ...state.lastUpdated, paymentMethods: new Date().toISOString() },
+        }));
+        return; // Success, exit retry loop
+      } catch (error) {
+        retryCount++;
+        console.error(`❌ fetchPaymentMethods: Intento ${retryCount}/${maxRetries} falló:`, error);
+        
+        if (retryCount >= maxRetries) {
+          console.error('❌ fetchPaymentMethods: Todos los intentos fallaron');
+          set({ error: error instanceof Error ? error.message : 'Error desconocido' });
+          return;
+        }
+        
+        // Wait before retrying (exponential backoff)
+        await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+      }
     }
   },
+  
   // --- JOB TITLES ---
   fetchJobTitles: async () => {
-    try {
-      const { data } = await apiClient.get(`${API_BASE_URL}/api/master-data/job-titles`);
-      set((state) => ({
-        jobTitles: data as JobTitle[],
-        lastUpdated: { ...state.lastUpdated, jobTitles: new Date().toISOString() },
-      }));
-    } catch (error) {
-      set({ error: error instanceof Error ? error.message : 'Error desconocido' });
+    console.log('🔄 fetchJobTitles: Iniciando llamada a API...');
+    const maxRetries = 3;
+    let retryCount = 0;
+    
+    while (retryCount < maxRetries) {
+      try {
+        const { data } = await apiClient.get('/api/master-data/job-titles');
+        console.log('✅ fetchJobTitles: Respuesta exitosa:', data);
+        set((state) => ({
+          jobTitles: data as JobTitle[],
+          lastUpdated: { ...state.lastUpdated, jobTitles: new Date().toISOString() },
+        }));
+        return; // Success, exit retry loop
+      } catch (error) {
+        retryCount++;
+        console.error(`❌ fetchJobTitles: Intento ${retryCount}/${maxRetries} falló:`, error);
+        
+        if (retryCount >= maxRetries) {
+          console.error('❌ fetchJobTitles: Todos los intentos fallaron');
+          set({ error: error instanceof Error ? error.message : 'Error desconocido' });
+          return;
+        }
+        
+        // Wait before retrying (exponential backoff)
+        await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+      }
     }
   },
+  
   // --- CATEGORIES ---
   fetchCategories: async () => {
-    try {
-      const { data } = await apiClient.get(`${API_BASE_URL}/api/master-data/categories`);
-      set((state) => ({
-        categories: data as CategoryService[],
-        lastUpdated: { ...state.lastUpdated, categories: new Date().toISOString() },
-      }));
-    } catch (error) {
-      set({ error: error instanceof Error ? error.message : 'Error desconocido' });
+    console.log('🔄 fetchCategories: Iniciando llamada a API...');
+    const maxRetries = 3;
+    let retryCount = 0;
+    
+    while (retryCount < maxRetries) {
+      try {
+        const { data } = await apiClient.get('/api/master-data/categories');
+        console.log('✅ fetchCategories: Respuesta exitosa:', data);
+        set((state) => ({
+          categories: data as CategoryService[],
+          lastUpdated: { ...state.lastUpdated, categories: new Date().toISOString() },
+        }));
+        return; // Success, exit retry loop
+      } catch (error) {
+        retryCount++;
+        console.error(`❌ fetchCategories: Intento ${retryCount}/${maxRetries} falló:`, error);
+        
+        if (retryCount >= maxRetries) {
+          console.error('❌ fetchCategories: Todos los intentos fallaron');
+          set({ error: error instanceof Error ? error.message : 'Error desconocido' });
+          return;
+        }
+        
+        // Wait before retrying (exponential backoff)
+        await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+      }
     }
   },
 

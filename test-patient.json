@@ -1,9 +1,12 @@
 {
-  "firstName": "Ana Sofia",
-  "lastName": "Martinez Torres",
-  "dni": "11223344",
-  "birthDate": "1992-03-15T00:00:00",
-  "phoneNumber": "+51 955 112 233",
-  "email": "ana.martinez@email.com",
+  "firstName": "Luis Carlos",
+  "lastName": "Gonzalez Ruiz",
+  "dni": "99887766",
+  "birthDate": "1988-07-22T00:00:00",
+  "documentTypeId": 1,
+  "genderId": 2,
+  "districtId": 2,
+  "phone": "+51 966 998 877",
+  "email": "luis.gonzalez@email.com",
   "status": true
 } 

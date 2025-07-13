@@ -2,14 +2,20 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
+import { Label } from '@/shared/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Badge } from '@/shared/components/ui/badge';
-import { Search, Plus, Edit, Phone, Mail, Award, Loader2 } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/shared/components/ui/dialog';
-import { Label } from '@/shared/components/ui/label';
+import { Search, Plus, Edit, Trash2, ArrowUp, Loader2, User, Mail, Phone, Award } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/shared/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select';
-import { Textarea } from '@/shared/components/ui/textarea';
-import { useEmployeeStore, useMasterDataStore, type Employee } from '@/shared/stores';
+import { useEmployeeStore, type Employee } from '@/shared/stores';
+import { useMasterData } from '@/shared/hooks';
 import { toast } from 'sonner';
 
 const DoctorManagement: React.FC = () => {
@@ -41,14 +47,15 @@ const DoctorManagement: React.FC = () => {
 
   const {
     jobTitles,
-    fetchJobTitles
-  } = useMasterDataStore();
+    districts,
+    genders,
+    documentTypes
+  } = useMasterData();
 
   // Cargar datos al montar el componente
   useEffect(() => {
     fetchEmployees();
-    fetchJobTitles();
-  }, [fetchEmployees, fetchJobTitles]);
+  }, [fetchEmployees]);
 
   // Manejar errores
   useEffect(() => {
@@ -199,98 +206,80 @@ const DoctorManagement: React.FC = () => {
         </div>
       </div>
 
-      <div className="p-4 space-y-6">
-        {/* Search Bar */}
+      {/* Search Bar */}
+      <div className="p-4 border-b border-sakura-gray-medium">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-sakura-gray" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-sakura-gray h-4 w-4" />
           <Input
+            placeholder="Buscar doctores..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Buscar doctores por nombre o correo..."
-            className="pl-10 h-12 border-sakura-gray-medium focus:border-sakura-red rounded-xl"
+            className="pl-10"
           />
         </div>
+      </div>
 
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card>
-            <CardContent className="p-6">
-              <div className="text-2xl font-bold text-sakura-red">{employees.length}</div>
-              <p className="text-sm text-gray-600">Doctores Registrados</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-6">
-              <div className="text-2xl font-bold text-green-600">
-                {employees.filter(e => e.status).length}
-              </div>
-              <p className="text-sm text-gray-600">Doctores Activos</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-6">
-              <div className="text-2xl font-bold text-blue-600">
-                {employees.filter(e => e.job_title_id === 1).length}
-              </div>
-              <p className="text-sm text-gray-600">Doctores</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Doctors Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {filteredDoctors.map((doctor) => (
-            <Card key={doctor.employee_id} className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg">{`${doctor.first_name} ${doctor.last_name}`}</CardTitle>
-                  <Badge variant={doctor.status ? 'default' : 'secondary'}>
-                    {doctor.status ? 'Activo' : 'Inactivo'}
-                  </Badge>
-                </div>
-                <p className="text-sakura-red font-medium">{getJobTitleName(doctor.job_title_id)}</p>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div className="flex items-center gap-2">
-                    <Mail className="h-4 w-4 text-gray-500" />
-                    <span className="truncate">{doctor.email || 'Sin email'}</span>
+      {/* Content */}
+      <div className="p-4">
+        {filteredDoctors.length === 0 ? (
+          <div className="text-center py-12">
+            <User className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No hay doctores registrados</h3>
+            <p className="text-gray-500 mb-6">Comience registrando el primer doctor del sistema</p>
+            <Button 
+              onClick={() => setIsAddDialogOpen(true)}
+              className="bg-sakura-red hover:bg-sakura-red-dark"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Registrar Doctor
+            </Button>
+          </div>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {filteredDoctors.map((doctor) => (
+              <Card key={doctor.employee_id} className="shadow-sm border-sakura-gray-medium/30 hover:shadow-md transition-shadow">
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <CardTitle className="text-lg font-semibold text-gray-800">
+                        {doctor.first_name} {doctor.last_name}
+                      </CardTitle>
+                      <p className="text-sm text-sakura-gray mt-1">
+                        {getJobTitleName(doctor.job_title_id)}
+                      </p>
+                    </div>
+                    <Badge variant={doctor.status ? "default" : "secondary"}>
+                      {doctor.status ? 'Activo' : 'Inactivo'}
+                    </Badge>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Phone className="h-4 w-4 text-gray-500" />
-                    <span>{doctor.phone || 'Sin teléfono'}</span>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <Mail className="h-4 w-4 text-sakura-red" />
+                    <span>{doctor.email}</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Award className="h-4 w-4 text-gray-500" />
-                    <span>ID: {doctor.employee_id}</span>
+                  {doctor.phone && (
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <Phone className="h-4 w-4 text-sakura-red" />
+                      <span>{doctor.phone}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <Award className="h-4 w-4 text-sakura-red" />
+                    <span>Contratado: {new Date(doctor.hired_at).toLocaleDateString()}</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">Especialidad: {doctor.specialty || 'Sin especificar'}</span>
+                  <div className="flex gap-2 mt-3">
+                    <Button variant="outline" size="sm" className="flex-1">
+                      <Edit className="h-3 w-3 mr-1" />
+                      Editar
+                    </Button>
+                    <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
                   </div>
-                </div>
-
-                {doctor.hired_at && (
-                  <div className="bg-gray-50 rounded-lg p-3">
-                    <p className="text-sm text-gray-700">
-                      Contratado: {new Date(doctor.hired_at).toLocaleDateString()}
-                    </p>
-                  </div>
-                )}
-
-                <div className="flex gap-2">
-                  <Button variant="outline" className="flex-1 border-sakura-red text-sakura-red hover:bg-sakura-red/10">
-                    <Edit className="h-4 w-4 mr-2" />
-                    Editar
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {filteredDoctors.length === 0 && (
-          <div className="text-center py-8">
-            <p className="text-gray-500">No se encontraron doctores</p>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         )}
       </div>

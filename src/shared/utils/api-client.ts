@@ -51,7 +51,16 @@ class ApiClient {
     };
 
     try {
-      const response = await fetch(url, config);
+      // Add timeout to prevent hanging requests
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      
+      const response = await fetch(url, {
+        ...config,
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
       
       if (!response.ok) {
         // Manejar errores de autenticación
@@ -61,6 +70,12 @@ class ApiClient {
         }
         
         const errorData = await response.json().catch(() => ({}));
+        
+        // Handle specific backend errors
+        if (errorData.message && errorData.message.includes('ConcurrentModificationException')) {
+          throw new Error('Error de concurrencia en el servidor. Por favor, intente nuevamente.');
+        }
+        
         throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
       }
 
@@ -68,6 +83,16 @@ class ApiClient {
       return { data };
     } catch (error) {
       if (error instanceof Error) {
+        // Handle abort error (timeout)
+        if (error.name === 'AbortError') {
+          throw new Error('La solicitud tardó demasiado tiempo. Por favor, intente nuevamente.');
+        }
+        
+        // Handle network errors
+        if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+          throw new Error('Error de conexión. Verifique su conexión a internet e intente nuevamente.');
+        }
+        
         throw new Error(error.message);
       }
       throw new Error('Error de conexión');

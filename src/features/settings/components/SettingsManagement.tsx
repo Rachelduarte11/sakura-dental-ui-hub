@@ -2,15 +2,17 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/shared/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
-import { Badge } from '@/shared/components/ui/badge';
-import { Switch } from '@/shared/components/ui/switch';
-import { Label } from '@/shared/components/ui/label';
-import { ArrowUp, Shield, Users, Settings, Image, Globe, Lock, Bell, Link, Key, Sun, Moon, Loader2, Plus, Edit, Trash2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useMasterDataStore, type District, type Gender, type DocumentType } from '@/shared/stores';
-import { toast } from 'sonner';
 import { Input } from '@/shared/components/ui/input';
+import { Label } from '@/shared/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs';
+import { Badge } from '@/shared/components/ui/badge';
+import { Plus, Edit, Trash2, Loader2 } from 'lucide-react';
+import { useMasterData } from '@/shared/hooks';
+import { toast } from 'sonner';
+import { Switch } from '@/shared/components/ui/switch';
+import { useRouter } from 'next/navigation';
+import { ArrowUp, Shield, Users, Settings, Image, Globe, Lock, Bell, Link, Key, Sun, Moon } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/shared/components/ui/dialog';
 
 interface Permission {
@@ -81,14 +83,36 @@ const SettingsManagement: React.FC<SettingsManagementProps> = ({ onBack }) => {
     deleteGender,
     deleteDocumentType,
     clearError 
-  } = useMasterDataStore();
+  } = useMasterData('districts');
+
+  const { 
+    genders: allGenders,
+    isLoading: gendersLoading,
+    error: gendersError,
+    fetchGenders: fetchAllGenders,
+    createGender: createAllGender,
+    updateGender: updateAllGender,
+    deleteGender: deleteAllGender,
+    clearError: clearGendersError
+  } = useMasterData('genders');
+
+  const { 
+    documentTypes: allDocumentTypes,
+    isLoading: documentTypesLoading,
+    error: documentTypesError,
+    fetchDocumentTypes: fetchAllDocumentTypes,
+    createDocumentType: createAllDocumentType,
+    updateDocumentType: updateAllDocumentType,
+    deleteDocumentType: deleteAllDocumentType,
+    clearError: clearDocumentTypesError
+  } = useMasterData('documentTypes');
 
   // Cargar datos maestros al montar el componente
   useEffect(() => {
     fetchDistricts();
-    fetchGenders();
-    fetchDocumentTypes();
-  }, [fetchDistricts, fetchGenders, fetchDocumentTypes]);
+    fetchAllGenders();
+    fetchAllDocumentTypes();
+  }, [fetchDistricts, fetchAllGenders, fetchAllDocumentTypes]);
 
   // Manejar errores
   useEffect(() => {
@@ -96,7 +120,15 @@ const SettingsManagement: React.FC<SettingsManagementProps> = ({ onBack }) => {
       toast.error(error);
       clearError();
     }
-  }, [error, clearError]);
+    if (gendersError) {
+      toast.error(gendersError);
+      clearGendersError();
+    }
+    if (documentTypesError) {
+      toast.error(documentTypesError);
+      clearDocumentTypesError();
+    }
+  }, [error, clearError, gendersError, clearGendersError, documentTypesError, clearDocumentTypesError]);
 
   // Permisos disponibles
   const permissions: Permission[] = [
@@ -249,7 +281,7 @@ const SettingsManagement: React.FC<SettingsManagementProps> = ({ onBack }) => {
     }
 
     try {
-      await createGender(newGender);
+      await createAllGender(newGender);
       toast.success('Género agregado exitosamente');
       setNewGender({ code: '', name: '', status: true });
       setIsAddGenderOpen(false);
@@ -265,7 +297,7 @@ const SettingsManagement: React.FC<SettingsManagementProps> = ({ onBack }) => {
     }
 
     try {
-      await createDocumentType(newDocumentType);
+      await createAllDocumentType(newDocumentType);
       toast.success('Tipo de documento agregado exitosamente');
       setNewDocumentType({ code: '', name: '', status: true });
       setIsAddDocumentTypeOpen(false);
@@ -274,7 +306,7 @@ const SettingsManagement: React.FC<SettingsManagementProps> = ({ onBack }) => {
     }
   };
 
-  if (isLoading) {
+  if (isLoading || gendersLoading || documentTypesLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="flex items-center gap-2">

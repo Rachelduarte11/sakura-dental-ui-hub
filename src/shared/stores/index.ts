@@ -1,43 +1,23 @@
-// Auth Store
-export { useAuthStore } from './authStore';
-export type { User, Role, Permission } from './authStore';
+// Export all stores
+export * from './authStore';
+export * from './patientStore';
+export * from './agendaStore';
+export * from './employeeStore';
+export * from './inventoryStore';
+export * from './paymentStore';
+export * from './quotationStore';
 
-// Patient Store
-export { usePatientStore } from './patientStore';
-export type { Patient } from './patientStore';
+// Export new modularized stores (these replace the old masterDataStore exports)
+export * from './districtsStore';
+export * from './gendersStore';
+export * from './documentTypesStore';
+export * from './jobTitlesStore';
 
-// Service Store
-export { useServiceStore } from './serviceStore';
-export type { Service } from './serviceStore';
-
-// Quotation Store
-export { useQuotationStore } from './quotationStore';
-export type { Quotation, QuotationItem, ClinicalHistory } from './quotationStore';
-
-// Payment Store
-export { usePaymentStore } from './paymentStore';
-export type { Payment, Receipt } from './paymentStore';
-
-// Employee Store
-export { useEmployeeStore } from './employeeStore';
-export type { Employee } from './employeeStore';
-
-// Agenda Store
-export { useAgendaStore } from './agendaStore';
-export type { Appointment, AppointmentSlot } from './agendaStore';
-
-// Master Data Store - Contains all shared types
-export { useMasterDataStore } from './masterDataStore';
+// Export types from masterDataStore that are not duplicated
 export type { 
-  MasterData, 
-  District, 
-  Gender, 
-  DocumentType, 
   PaymentMethod, 
-  JobTitle, 
   CategoryService 
 } from './masterDataStore';
 
-// Inventory Store
-export { useInventoryStore } from './inventoryStore';
-export type { InventoryItem, InventoryCategory } from './inventoryStore'; 
+// Re-export JobTitle from jobTitlesStore to avoid conflicts
+export type { JobTitle } from './jobTitlesStore'; 

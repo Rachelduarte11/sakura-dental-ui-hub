@@ -9,14 +9,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select';
-import { useMasterDataStore, type Patient } from '@/shared/stores';
+import { useMasterData } from '@/shared/hooks';
 import { Loader2 } from 'lucide-react';
 
 interface PatientFormData {
   firstName: string;
   lastName: string;
   email: string;
-  phoneNumber: string;
+  phone: string;
   birthDate: string;
   dni: string;
   districtId: number;
@@ -44,30 +44,10 @@ const PatientForm: React.FC<PatientFormProps> = ({
     districts, 
     genders, 
     documentTypes, 
-    fetchAllMasterData,
-    isLoading 
-  } = useMasterDataStore();
-
-  // Cargar datos maestros al montar el componente
-  useEffect(() => {
-    console.log('🔄 PatientForm: Cargando datos maestros...');
-    console.log('🔍 PatientForm: Estado inicial del store:', {
-      districts: districts,
-      genders: genders,
-      documentTypes: documentTypes,
-      isLoading
-    });
-    
-    fetchAllMasterData().then(() => {
-      console.log('✅ PatientForm: Datos maestros cargados:', {
-        districts: districts,
-        genders: genders,
-        documentTypes: documentTypes
-      });
-    }).catch((error) => {
-      console.error('❌ PatientForm: Error cargando datos maestros:', error);
-    });
-  }, [fetchAllMasterData]);
+    loadAllMasterData,
+    isLoading,
+    error
+  } = useMasterData();
 
   // Log cuando cambian los datos
   useEffect(() => {
@@ -75,9 +55,78 @@ const PatientForm: React.FC<PatientFormProps> = ({
       districts: districts,
       genders: genders,
       documentTypes: documentTypes,
-      isLoading
+      isLoading,
+      error
     });
-  }, [districts, genders, documentTypes, isLoading]);
+  }, [districts, genders, documentTypes, isLoading, error]);
+
+  // Función para reintentar cargar datos maestros
+  const handleRetryLoadMasterData = () => {
+    console.log('🔄 PatientForm: Reintentando cargar datos maestros...');
+    loadAllMasterData().catch((error) => {
+      console.error('❌ PatientForm: Error en reintento:', error);
+    });
+  };
+
+  // Mostrar mensaje de error si hay problemas cargando datos maestros
+  if (error && districts.length === 0 && genders.length === 0 && documentTypes.length === 0) {
+    return (
+      <div className="space-y-4">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-red-800">
+                Error de conexión con la base de datos
+              </h3>
+              <div className="mt-2 text-sm text-red-700">
+                <p>No se pudieron cargar los datos maestros desde la base de datos.</p>
+                {error.includes('ConcurrentModificationException') && (
+                  <p className="mt-1 font-medium">Error de concurrencia en el servidor. El sistema está procesando múltiples solicitudes simultáneamente.</p>
+                )}
+                {error.includes('timeout') && (
+                  <p className="mt-1 font-medium">La solicitud tardó demasiado tiempo. El servidor puede estar sobrecargado.</p>
+                )}
+                {error.includes('Failed to fetch') && (
+                  <p className="mt-1 font-medium">No se pudo conectar con el servidor. Verifique que el backend esté ejecutándose.</p>
+                )}
+              </div>
+              <div className="mt-4 flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRetryLoadMasterData}
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      Cargando...
+                    </>
+                  ) : (
+                    'Reintentar'
+                  )}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={onCancel}
+                >
+                  Cancelar
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
@@ -116,8 +165,8 @@ const PatientForm: React.FC<PatientFormProps> = ({
         <Label htmlFor="phone">Teléfono</Label>
         <Input
           id="phone"
-          value={formData.phoneNumber}
-          onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})}
+          value={formData.phone}
+          onChange={(e) => setFormData({...formData, phone: e.target.value})}
         />
       </div>
 
