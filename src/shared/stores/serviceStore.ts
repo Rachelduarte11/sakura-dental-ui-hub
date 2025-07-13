@@ -50,3 +50,4 @@ export const useServiceStore = create<ServiceState & ServiceActions>((set, get) 
     set({ isLoading: loading });
   },
 }));
+
