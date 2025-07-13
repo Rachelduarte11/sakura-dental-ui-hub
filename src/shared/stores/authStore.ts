@@ -58,7 +58,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
       login: async (email: string, password: string) => {
         set({ isLoading: true, error: null });
         try {
-          // Aquí iría la llamada a la API
+          // Usar el cliente API centralizado
           const response = await fetch('/api/auth/login', {
             method: 'POST',
             headers: {
