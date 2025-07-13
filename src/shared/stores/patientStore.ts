@@ -1,20 +1,7 @@
 import { create } from 'zustand';
-import { patientsApi } from '../utils/api-client';
+import { patientsApi, type Patient } from '../utils/api-client';
 
-export interface Patient {
-  patientId: number;
-  firstName: string;
-  lastName: string;
-  email?: string;
-  phone?: string;
-  birthDate?: string;
-  dni?: string;
-  status: boolean;
-  createdAt: string;
-  districtId: number;
-  genderId: number;
-  documentTypeId: number;
-}
+export type { Patient };
 
 interface PatientState {
   patients: Patient[];
@@ -31,6 +18,7 @@ interface PatientActions {
   // Fetch actions
   fetchPatients: () => Promise<void>;
   fetchPatientById: (id: number) => Promise<void>;
+  searchPatients: (searchTerm: string) => Promise<void>;
   
   // CRUD actions
   createPatient: (patient: Omit<Patient, 'patientId' | 'createdAt'>) => Promise<void>;
@@ -77,6 +65,19 @@ export const usePatientStore = create<PatientState & PatientActions>((set, get) 
     } catch (error) {
       set({
         error: error instanceof Error ? error.message : 'Error desconocido',
+        isLoading: false,
+      });
+    }
+  },
+
+  searchPatients: async (searchTerm: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await patientsApi.search(searchTerm);
+      set({ patients: response.data || [], isLoading: false });
+    } catch (error) {
+      set({
+        error: error instanceof Error ? error.message : 'Error al buscar pacientes',
         isLoading: false,
       });
     }

@@ -1,6 +1,21 @@
 import { useAuthStore } from '../stores/authStore';
 import { API_BASE_URL, API_ENDPOINTS } from '../../config/api';
-import type { Patient } from '../stores/patientStore';
+
+// Definir el tipo Patient aquí para evitar dependencias circulares
+export interface Patient {
+  patientId: number;
+  firstName: string;
+  lastName: string;
+  email?: string;
+  phone?: string;
+  birthDate?: string;
+  dni?: string;
+  status: boolean;
+  createdAt: string;
+  districtId: number;
+  genderId: number;
+  documentTypeId: number;
+}
 
 // Configuración del cliente API
 const BASE_URL = API_BASE_URL;
@@ -179,12 +194,14 @@ export const patientsApi = {
     apiClient.get(API_ENDPOINTS.PATIENTS.replace(API_BASE_URL, ''), params),
   getById: (id: number): Promise<ApiResponse<Patient>> => 
     apiClient.get(`${API_ENDPOINTS.PATIENTS.replace(API_BASE_URL, '')}/${id}`),
-  create: (patient: Omit<Patient, 'patient_id' | 'created_at'>): Promise<ApiResponse<Patient>> => 
+  create: (patient: Omit<Patient, 'patientId' | 'createdAt'>): Promise<ApiResponse<Patient>> => 
     apiClient.post(API_ENDPOINTS.PATIENTS.replace(API_BASE_URL, ''), patient),
   update: (id: number, patient: Partial<Patient>): Promise<ApiResponse<Patient>> => 
     apiClient.put(`${API_ENDPOINTS.PATIENTS.replace(API_BASE_URL, '')}/${id}`, patient),
   delete: (id: number): Promise<ApiResponse<void>> => 
     apiClient.delete(`${API_ENDPOINTS.PATIENTS.replace(API_BASE_URL, '')}/${id}`),
+  search: (searchTerm: string): Promise<ApiResponse<Patient[]>> => 
+    apiClient.get(`${API_ENDPOINTS.PATIENTS.replace(API_BASE_URL, '')}/search`, { searchTerm }),
 };
 
 export const servicesApi = {

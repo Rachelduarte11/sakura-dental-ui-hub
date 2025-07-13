@@ -1,32 +1,25 @@
-'use client'
-
 import PatientProfile from '@/features/patients/components/PatientProfile';
 import AppLayout from '@/shared/components/AppLayout';
-import { useRouter } from 'next/navigation';
 
 interface PatientPageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
-export default function PatientPage({ params }: PatientPageProps) {
-  const router = useRouter();
-  const patientId = parseInt(params.id);
-
-  const handleBack = () => {
-    router.push('/patients');
-  };
+export default async function PatientPage({ params }: PatientPageProps) {
+  const resolvedParams = await params;
+  const patientId = parseInt(resolvedParams.id);
 
   return (
     <AppLayout 
       currentScreen="patients" 
-      onNavigate={(screen) => router.push(`/${screen}`)}
+      onNavigate={(screen) => window.location.href = `/${screen}`}
       title="Perfil del Paciente"
     >
       <PatientProfile 
         patientId={patientId} 
-        onBack={handleBack} 
+        onBack={() => window.location.href = '/patients'} 
       />
     </AppLayout>
   );
