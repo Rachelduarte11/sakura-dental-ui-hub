@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "../shared/components/ui/toaster";
 import { Toaster as Sonner } from "../shared/components/ui/sonner";
 import { TooltipProvider } from "../shared/components/ui/tooltip";
-import { useAuthStore } from "../features/auth/store/authStore";
+import { useAuthStore } from "../shared/stores/authStore";
 import '../styles/globals.css'
 
 // Create a client
