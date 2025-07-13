@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Input } from '@/shared/components/ui/input';
-import { Search } from 'lucide-react';
+import { Search, Loader2 } from 'lucide-react';
 import { Patient } from './types';
+import { usePatientStore } from '@/shared/stores';
 
 interface PatientSelectorProps {
-  patients: Patient[];
+  patients: any[];
   selectedPatient: Patient | null;
   onPatientSelect: (patient: Patient) => void;
   onPatientClear?: () => void;
@@ -19,10 +20,31 @@ const PatientSelector: React.FC<PatientSelectorProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
 
-  const filteredPatients = patients.filter(patient =>
-    patient.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    patient.phone.includes(searchQuery)
-  );
+  // Handle search input change - búsqueda local en datos del store
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+  };
+
+
+
+  // Convertir datos del store al formato esperado por el componente
+  const patientsData: Patient[] = patients.map(patient => ({
+    id: patient.patientId,
+    name: `${patient.firstName} ${patient.lastName}`,
+    phone: patient.phone || '',
+    email: patient.email || ''
+  }));
+
+  const filteredPatients = patientsData.filter(patient => {
+    const searchLower = searchQuery.toLowerCase();
+    return (
+      patient.name.toLowerCase().includes(searchLower) ||
+      patient.phone.includes(searchQuery) ||
+      patient.email.toLowerCase().includes(searchLower) ||
+      // También buscar por nombre y apellido por separado
+      patient.name.split(' ').some(part => part.toLowerCase().includes(searchLower))
+    );
+  });
 
   const handlePatientSelect = (patient: Patient) => {
     onPatientSelect(patient);
@@ -40,15 +62,21 @@ const PatientSelector: React.FC<PatientSelectorProps> = ({
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
             <Input
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               placeholder="Buscar paciente..."
               className="pl-10"
             />
+
           </div>
 
           {searchQuery && !selectedPatient && (
             <div className="max-h-40 overflow-y-auto space-y-2">
-              {filteredPatients.map((patient) => (
+              {filteredPatients.length === 0 ? (
+                <div className="text-center py-4 text-gray-500">
+                  No se encontraron pacientes con "{searchQuery}"
+                </div>
+              ) : (
+                filteredPatients.map((patient) => (
                 <div
                   key={patient.id}
                   className="p-3 rounded-lg border cursor-pointer transition-colors border-gray-200 hover:border-gray-300"
@@ -57,7 +85,8 @@ const PatientSelector: React.FC<PatientSelectorProps> = ({
                   <div className="font-medium">{patient.name}</div>
                   <div className="text-sm text-gray-600">{patient.phone}</div>
                 </div>
-              ))}
+                ))
+              )}
             </div>
           )}
 

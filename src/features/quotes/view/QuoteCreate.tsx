@@ -10,7 +10,10 @@ import {
   Treatment,
   QuoteItem
 } from '../components';
-import { usePatientStore, useServiceStore, useQuotationStore, type Patient as StorePatient, type Service } from '@/shared/stores';
+import QuoteFooterBar from '../components/QuoteFooterBar';
+import { usePatientStore, useQuotationStore, type Patient as StorePatient } from '@/shared/stores';
+import { useCategorieServiceStore } from '@/features/services/store/categorieServiceStore';
+import { useServiceActions } from '@/features/services/hooks/useServiceActions';
 import { toast } from 'sonner';
 
 interface QuoteCreateProps {
@@ -31,26 +34,30 @@ const QuoteCreate: React.FC<QuoteCreateProps> = ({ onBack }) => {
     clearError: clearPatientsError 
   } = usePatientStore();
 
-  const { 
-    services, 
-    isLoading: servicesLoading, 
-    error: servicesError, 
-    fetchServices, 
-    clearError: clearServicesError 
-  } = useServiceStore();
+  const {
+    services,
+    isLoading: servicesLoading,
+    error: servicesError,
+    fetchServices,
+    setFilters,
+    clearError: clearServicesError
+  } = useServiceActions();
 
   const { 
-    createQuotation, 
-    isLoading: quotationLoading, 
-    error: quotationError, 
-    clearError: clearQuotationError 
-  } = useQuotationStore();
+    categories, 
+    isLoading: categoriesLoading, 
+    error: categoriesError, 
+    fetchCategories, 
+    clearError: clearCategoriesError 
+  } = useCategorieServiceStore();
 
-  // Cargar datos al montar el componente
+  // Cargar datos del store al montar el componente
   useEffect(() => {
     fetchPatients();
     fetchServices();
-  }, [fetchPatients, fetchServices]);
+    fetchCategories();
+    setFilters({}); // Para asegurar que no haya filtros activos y traiga todos los servicios
+  }, [fetchPatients, fetchServices, fetchCategories, setFilters]);
 
   // Manejar errores
   useEffect(() => {
@@ -62,26 +69,21 @@ const QuoteCreate: React.FC<QuoteCreateProps> = ({ onBack }) => {
       toast.error(servicesError);
       clearServicesError();
     }
-    if (quotationError) {
-      toast.error(quotationError);
-      clearQuotationError();
+    if (categoriesError) {
+      toast.error(categoriesError);
+      clearCategoriesError();
     }
-  }, [patientsError, servicesError, quotationError, clearPatientsError, clearServicesError, clearQuotationError]);
+  }, [patientsError, servicesError, categoriesError, clearPatientsError, clearServicesError, clearCategoriesError]);
 
-  // Convertir datos de stores a formato esperado por componentes
+  // Convertir datos del store a formato esperado por componentes
   const treatments: Treatment[] = services.map(service => ({
-    id: service.service_id,
-    name: service.name,
-    price: service.base_price,
-    category: 'Sin categoría' // TODO: Agregar categoría cuando esté disponible en el tipo Service
+    id: service['serviceId'],
+    name: service['name'],
+    price: typeof service['basePrice'] === 'number' ? service['basePrice'] : 0,
+    category: categories.find(cat => cat.categorieServiceId === service['categorieServiceId'])?.name || 'Sin categoría',
   }));
 
-  const patientsData: Patient[] = patients.map(patient => ({
-    id: patient.patient_id,
-    name: `${patient.first_name} ${patient.last_name}`,
-    phone: patient.phone || '',
-    email: patient.email || ''
-  }));
+
 
   // Business logic handlers
   const handlePatientSelect = (patient: Patient) => {
@@ -129,22 +131,31 @@ const QuoteCreate: React.FC<QuoteCreateProps> = ({ onBack }) => {
       return;
     }
 
-    try {
-      const totalAmount = quoteItems.reduce((sum, item) => sum + (item.price * item.quantity), 0) - discount;
-      
-      const quotationData = {
-        patient_id: selectedPatient.id,
-        total_amount: totalAmount,
-        status: 'PENDIENTE' as const,
-        items: quoteItems.map(item => ({
-          service_id: item.id,
-          quantity: item.quantity,
-          unit_price: item.price,
-          subtotal: item.price * item.quantity
-        })) as any // TODO: Ajustar tipo cuando se defina correctamente QuotationItem
-      };
+    // Construir payload según backend
+    const totalAmount = quoteItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const quotationData = {
+      patientId: selectedPatient.id,
+      totalAmount,
+      status: 'PENDIENTE',
+      items: quoteItems.map(item => ({
+        serviceId: item.id,
+        quantity: item.quantity,
+        unitPrice: item.price,
+        subtotal: item.price * item.quantity
+      }))
+    };
 
-      await createQuotation(quotationData);
+    try {
+      const response = await fetch('http://localhost:8080/api/quotations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(quotationData),
+      });
+      if (!response.ok) {
+        throw new Error('Error al guardar la cotización');
+      }
       toast.success('Cotización guardada exitosamente');
       onBack();
     } catch (error) {
@@ -177,7 +188,31 @@ const QuoteCreate: React.FC<QuoteCreateProps> = ({ onBack }) => {
   };
 
   const canPerformActions = selectedPatient && quoteItems.length > 0;
-  const isLoading = patientsLoading || servicesLoading || quotationLoading;
+  const isLoading = patientsLoading || servicesLoading || categoriesLoading;
+
+  if (patientsError || servicesError || categoriesError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded shadow">
+          <div className="font-bold mb-2">Error al cargar datos:</div>
+          <div>{patientsError || servicesError || categoriesError}</div>
+          <button
+            className="mt-4 px-4 py-2 bg-sakura-red text-white rounded hover:bg-sakura-red-dark"
+            onClick={() => {
+              clearPatientsError();
+              clearServicesError();
+              clearCategoriesError();
+              fetchPatients();
+              fetchServices();
+              fetchCategories();
+            }}
+          >
+            Reintentar
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -212,7 +247,7 @@ const QuoteCreate: React.FC<QuoteCreateProps> = ({ onBack }) => {
       <div className="p-4 space-y-6 pb-32 md:pb-6">
         {/* Patient Selection */}
         <PatientSelector
-          patients={patientsData}
+          patients={patients}
           selectedPatient={selectedPatient}
           onPatientSelect={handlePatientSelect}
           onPatientClear={handlePatientClear}
@@ -221,6 +256,7 @@ const QuoteCreate: React.FC<QuoteCreateProps> = ({ onBack }) => {
         {/* Treatments Selection */}
         <TreatmentSelector
           treatments={treatments}
+          categories={categories}
           quoteItems={quoteItems}
           onAddTreatment={handleAddTreatment}
           onRemoveTreatment={handleRemoveTreatment}
@@ -235,13 +271,17 @@ const QuoteCreate: React.FC<QuoteCreateProps> = ({ onBack }) => {
       </div>
 
       {/* Actions */}
-      <QuoteActions
-        onSave={handleSaveQuote}
-        onExportPDF={handleExportPDF}
-        onSendWhatsApp={handleSendWhatsApp}
-        onSendEmail={handleSendEmail}
-        disabled={!canPerformActions}
-      />
+      {quoteItems.length > 0 && (
+        <QuoteFooterBar
+          quoteItems={quoteItems}
+          discount={discount}
+          onSave={handleSaveQuote}
+          onExportPDF={handleExportPDF}
+          onSendWhatsApp={handleSendWhatsApp}
+          onSendEmail={handleSendEmail}
+          disabled={!selectedPatient}
+        />
+      )}
     </div>
   );
 };
