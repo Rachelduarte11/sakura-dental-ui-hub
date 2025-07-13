@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { authApi } from '../utils/api-client';
 
 export interface User {
   user_id: number;
@@ -36,7 +37,7 @@ interface AuthState {
 }
 
 interface AuthActions {
-  login: (email: string, password: string) => Promise<void>;
+  login: (username: string, password: string) => Promise<void>;
   logout: () => void;
   setUser: (user: User) => void;
   setToken: (token: string) => void;
@@ -55,26 +56,13 @@ export const useAuthStore = create<AuthState & AuthActions>()(
       error: null,
 
       // Actions
-      login: async (email: string, password: string) => {
+      login: async (username: string, password: string) => {
         set({ isLoading: true, error: null });
         try {
-          // Usar el cliente API centralizado
-          const response = await fetch('/api/auth/login', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ email, password }),
-          });
-
-          if (!response.ok) {
-            throw new Error('Credenciales inválidas');
-          }
-
-          const data = await response.json();
+          const response = await authApi.login(username, password);
           set({
-            user: data.user,
-            token: data.token,
+            user: response.data.user,
+            token: response.data.token,
             isAuthenticated: true,
             isLoading: false,
           });

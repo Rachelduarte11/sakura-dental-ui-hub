@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import PatientQuoteSelector from './PatientQuoteSelector';
-import QuotePaymentProcessor from './QuotePaymentProcessor';
+import QuotePaymentProcessor from '../components/QuotePaymentProcessor';
 import { useQuotationStore, usePatientStore, type Quotation, type Patient as StorePatient } from '@/shared/stores';
 import { toast } from 'sonner';
 
@@ -113,16 +113,9 @@ const SalesModule: React.FC = () => {
     setSelectedPatient(null);
   };
 
-  const isLoading = quotationsLoading || patientsLoading;
-
   return (
     <div className="p-6">
-      {isLoading ? (
-        <div className="flex items-center justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-sakura-red"></div>
-          <span className="ml-2 text-sakura-gray">Cargando datos...</span>
-        </div>
-      ) : currentStep === 'select' ? (
+      {currentStep === 'select' ? (
         <PatientQuoteSelector onQuoteSelect={handleQuoteSelect} />
       ) : (
         selectedQuotation && selectedPatient && (

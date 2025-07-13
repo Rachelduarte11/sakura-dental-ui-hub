@@ -1,28 +1,33 @@
+'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Button } from '@/shared/components/ui/button';
-import { Input } from '@/shared/components/ui/input';
-import { Label } from '@/shared/components/ui/label';
+import { Button } from '../../../shared/components/ui/button';
+import { Input } from '../../../shared/components/ui/input';
+import { Label } from '../../../shared/components/ui/label';
+import SakuraIcon from '../../../shared/components/SakuraIcon';
 import { ArrowLeft, Eye, EyeOff } from 'lucide-react';
-import SakuraIcon from '@/shared/components/SakuraIcon';
-import { API_ENDPOINTS } from '@/config/api';
-import { useAuthStore } from '@/shared/stores';
+import { useAuthStore } from '../store/authStore';
 import { toast } from 'sonner';
 
 interface LoginScreenProps {
   onBack: () => void;
-  onLogin: () => void;
+  redirectTo: string;
   onRegister: () => void;
 }
 
-const LoginScreen: React.FC<LoginScreenProps> = ({ onBack, onLogin, onRegister }) => {
+const LoginScreen: React.FC<LoginScreenProps> = ({ onBack, redirectTo, onRegister }) => {
   const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [localError, setLocalError] = useState('');
 
-  const handleSubmit = async (e: React.FormEvent) => {
-  const { login, isLoading, error, clearError, isAuthenticated } = useAuthStore();
+  const { login, isLoading, error, clearError } = useAuthStore();
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+
+  // Debug: Log authentication state changes
+  useEffect(() => {
+    console.log('🔍 LoginScreen - isAuthenticated changed:', isAuthenticated);
+  }, [isAuthenticated]);
 
   // Manejar errores de autenticación
   useEffect(() => {
@@ -32,40 +37,25 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onBack, onLogin, onRegister }
     }
   }, [error, clearError]);
 
-  // Redirigir si ya está autenticado
-  useEffect(() => {
-    if (isAuthenticated) {
-      onLogin();
-    }
-  }, [isAuthenticated, onLogin]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    try {
-      const res = await fetch(API_ENDPOINTS.LOGIN, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ username: email, password }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        onLogin();
-      } else {
-        setError(data.message || 'Login failed');
-      }
-    } catch (err) {
-      setError('Error de conexión con el servidor');
-    }
-    if (!email || !password) {
+    console.log('🔍 handleSubmit ejecutándose...');
+    setLocalError('');
+    
+    if (!username || !password) {
+      console.log('❌ Campos vacíos');
       toast.error('Por favor completa todos los campos');
       return;
     }
     
+    console.log('🔍 Intentando login con:', { username, password });
+    
     try {
-      await login(email, password);
+      await login(username, password);
+      console.log('🚀 Login exitoso, redirigiendo a:', redirectTo);
+      window.location.href = redirectTo;
     } catch (error) {
+      console.error('❌ Error en login:', error);
       // El error ya se maneja en el useEffect
     }
   };
@@ -99,15 +89,15 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onBack, onLogin, onRegister }
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-gray-700">
-                  Correo electrónico
+                <Label htmlFor="username" className="text-gray-700">
+                  Nombre de usuario
                 </Label>
                 <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="ingresa tu correo electrónico"
+                  id="username"
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="ingresa tu nombre de usuario"
                   className="h-12 bg-white shadow-simple-shadow border-0 focus:border-sakura-red focus:ring-sakura-red/20 rounded-xl"
                   required
                 />
@@ -153,11 +143,12 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onBack, onLogin, onRegister }
             <Button
               type="submit"
               disabled={isLoading}
+              onClick={() => console.log('🔍 Botón clickeado')}
               className="w-full h-14 bg-sakura-red hover:bg-sakura-red-dark text-white font-medium text-lg rounded-xl shadow-lg transition-all duration-200 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? 'Ingresando...' : 'Ingresar'}
             </Button>
-            {error && <div className="text-center text-red-600 text-sm mt-2">{error}</div>}
+            {localError && <div className="text-center text-red-600 text-sm mt-2">{localError}</div>}
           </form>
 
           {/* Social Login */}

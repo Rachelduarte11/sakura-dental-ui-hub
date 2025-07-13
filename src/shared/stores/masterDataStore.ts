@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { API_BASE_URL } from '../../config/api';
+import { apiClient } from '../utils/api-client';
 
 export interface MasterData {
   districts: District[];
@@ -10,20 +12,20 @@ export interface MasterData {
 }
 
 export interface District {
-  district_id: number;
+  districtId: number;
   name: string;
   status: boolean;
 }
 
 export interface Gender {
-  gender_id: number;
+  genderId: number;
   code: string;
   name: string;
   status: boolean;
 }
 
 export interface DocumentType {
-  document_type_id: number;
+  documentTypeId: number;
   code: string;
   name: string;
   status: boolean;
@@ -153,357 +155,196 @@ export const useMasterDataStore = create<MasterDataState & MasterDataActions>((s
     }
   },
 
+  // --- DISTRICTS ---
   fetchDistricts: async () => {
+    console.log('🔄 fetchDistricts: Iniciando llamada a API...');
     try {
-      const response = await fetch('/api/master-data/districts');
-      if (!response.ok) {
-        throw new Error('Error al cargar distritos');
-      }
-      const data = await response.json();
+      const { data } = await apiClient.get('/api/districts');
+      console.log('✅ fetchDistricts: Respuesta exitosa:', data);
       set((state) => ({
-        districts: data,
+        districts: data as District[],
         lastUpdated: { ...state.lastUpdated, districts: new Date().toISOString() },
       }));
     } catch (error) {
-      set({
-        error: error instanceof Error ? error.message : 'Error desconocido',
-      });
+      console.error('❌ fetchDistricts: Error en API:', error);
+      set({ error: error instanceof Error ? error.message : 'Error desconocido' });
     }
   },
-
-  fetchGenders: async () => {
-    try {
-      const response = await fetch('/api/master-data/genders');
-      if (!response.ok) {
-        throw new Error('Error al cargar géneros');
-      }
-      const data = await response.json();
-      set((state) => ({
-        genders: data,
-        lastUpdated: { ...state.lastUpdated, genders: new Date().toISOString() },
-      }));
-    } catch (error) {
-      set({
-        error: error instanceof Error ? error.message : 'Error desconocido',
-      });
-    }
-  },
-
-  fetchDocumentTypes: async () => {
-    try {
-      const response = await fetch('/api/master-data/document-types');
-      if (!response.ok) {
-        throw new Error('Error al cargar tipos de documento');
-      }
-      const data = await response.json();
-      set((state) => ({
-        documentTypes: data,
-        lastUpdated: { ...state.lastUpdated, documentTypes: new Date().toISOString() },
-      }));
-    } catch (error) {
-      set({
-        error: error instanceof Error ? error.message : 'Error desconocido',
-      });
-    }
-  },
-
-  fetchPaymentMethods: async () => {
-    try {
-      const response = await fetch('/api/master-data/payment-methods');
-      if (!response.ok) {
-        throw new Error('Error al cargar métodos de pago');
-      }
-      const data = await response.json();
-      set((state) => ({
-        paymentMethods: data,
-        lastUpdated: { ...state.lastUpdated, paymentMethods: new Date().toISOString() },
-      }));
-    } catch (error) {
-      set({
-        error: error instanceof Error ? error.message : 'Error desconocido',
-      });
-    }
-  },
-
-  fetchJobTitles: async () => {
-    try {
-      const response = await fetch('/api/master-data/job-titles');
-      if (!response.ok) {
-        throw new Error('Error al cargar cargos');
-      }
-      const data = await response.json();
-      set((state) => ({
-        jobTitles: data,
-        lastUpdated: { ...state.lastUpdated, jobTitles: new Date().toISOString() },
-      }));
-    } catch (error) {
-      set({
-        error: error instanceof Error ? error.message : 'Error desconocido',
-      });
-    }
-  },
-
-  fetchCategories: async () => {
-    try {
-      const response = await fetch('/api/master-data/categories');
-      if (!response.ok) {
-        throw new Error('Error al cargar categorías');
-      }
-      const data = await response.json();
-      set((state) => ({
-        categories: data,
-        lastUpdated: { ...state.lastUpdated, categories: new Date().toISOString() },
-      }));
-    } catch (error) {
-      set({
-        error: error instanceof Error ? error.message : 'Error desconocido',
-      });
-    }
-  },
-
-  // CRUD actions for districts
   createDistrict: async (district) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await fetch('/api/master-data/districts', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(district),
-      });
-
-      if (!response.ok) {
-        throw new Error('Error al crear distrito');
-      }
-
-      const newDistrict = await response.json();
+      const { data: newDistrict } = await apiClient.post('/api/districts', district);
       set((state) => ({
-        districts: [...state.districts, newDistrict],
+        districts: [...state.districts, newDistrict as District],
         isLoading: false,
       }));
     } catch (error) {
-      set({
-        error: error instanceof Error ? error.message : 'Error desconocido',
-        isLoading: false,
-      });
+      set({ error: error instanceof Error ? error.message : 'Error desconocido', isLoading: false });
     }
   },
-
-  updateDistrict: async (id: number, district) => {
+  updateDistrict: async (id, district) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await fetch(`/api/master-data/districts/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(district),
-      });
-
-      if (!response.ok) {
-        throw new Error('Error al actualizar distrito');
-      }
-
-      const updatedDistrict = await response.json();
+      const { data: updatedDistrict } = await apiClient.put(`/api/districts/${id}`, district);
       set((state) => ({
-        districts: state.districts.map((d) =>
-          d.district_id === id ? updatedDistrict : d
-        ),
+        districts: state.districts.map((d) => d.districtId === id ? updatedDistrict as District : d),
         isLoading: false,
       }));
     } catch (error) {
-      set({
-        error: error instanceof Error ? error.message : 'Error desconocido',
-        isLoading: false,
-      });
+      set({ error: error instanceof Error ? error.message : 'Error desconocido', isLoading: false });
     }
   },
-
-  deleteDistrict: async (id: number) => {
+  deleteDistrict: async (id) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await fetch(`/api/master-data/districts/${id}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        throw new Error('Error al eliminar distrito');
-      }
-
+      await apiClient.delete(`/api/districts/${id}`);
       set((state) => ({
-        districts: state.districts.filter((d) => d.district_id !== id),
+        districts: state.districts.filter((d) => d.districtId !== id),
         isLoading: false,
       }));
     } catch (error) {
-      set({
-        error: error instanceof Error ? error.message : 'Error desconocido',
-        isLoading: false,
-      });
+      set({ error: error instanceof Error ? error.message : 'Error desconocido', isLoading: false });
     }
   },
 
-  // CRUD actions for genders
+  // --- GENDERS ---
+  fetchGenders: async () => {
+    console.log('🔄 fetchGenders: Iniciando llamada a API...');
+    try {
+      const { data } = await apiClient.get('/api/genders');
+      console.log('✅ fetchGenders: Respuesta exitosa:', data);
+      set((state) => ({
+        genders: data as Gender[],
+        lastUpdated: { ...state.lastUpdated, genders: new Date().toISOString() },
+      }));
+    } catch (error) {
+      console.error('❌ fetchGenders: Error en API:', error);
+      set({ error: error instanceof Error ? error.message : 'Error desconocido' });
+    }
+  },
   createGender: async (gender) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await fetch('/api/master-data/genders', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(gender),
-      });
-
-      if (!response.ok) {
-        throw new Error('Error al crear género');
-      }
-
-      const newGender = await response.json();
+      const { data: newGender } = await apiClient.post('/api/genders', gender);
       set((state) => ({
-        genders: [...state.genders, newGender],
+        genders: [...state.genders, newGender as Gender],
         isLoading: false,
       }));
     } catch (error) {
-      set({
-        error: error instanceof Error ? error.message : 'Error desconocido',
-        isLoading: false,
-      });
+      set({ error: error instanceof Error ? error.message : 'Error desconocido', isLoading: false });
     }
   },
-
-  updateGender: async (id: number, gender) => {
+  updateGender: async (id, gender) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await fetch(`/api/master-data/genders/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(gender),
-      });
-
-      if (!response.ok) {
-        throw new Error('Error al actualizar género');
-      }
-
-      const updatedGender = await response.json();
+      const { data: updatedGender } = await apiClient.put(`/api/genders/${id}`, gender);
       set((state) => ({
-        genders: state.genders.map((g) =>
-          g.gender_id === id ? updatedGender : g
-        ),
+        genders: state.genders.map((g) => g.genderId === id ? updatedGender as Gender : g),
         isLoading: false,
       }));
     } catch (error) {
-      set({
-        error: error instanceof Error ? error.message : 'Error desconocido',
-        isLoading: false,
-      });
+      set({ error: error instanceof Error ? error.message : 'Error desconocido', isLoading: false });
     }
   },
-
-  deleteGender: async (id: number) => {
+  deleteGender: async (id) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await fetch(`/api/master-data/genders/${id}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        throw new Error('Error al eliminar género');
-      }
-
+      await apiClient.delete(`/api/genders/${id}`);
       set((state) => ({
-        genders: state.genders.filter((g) => g.gender_id !== id),
+        genders: state.genders.filter((g) => g.genderId !== id),
         isLoading: false,
       }));
     } catch (error) {
-      set({
-        error: error instanceof Error ? error.message : 'Error desconocido',
-        isLoading: false,
-      });
+      set({ error: error instanceof Error ? error.message : 'Error desconocido', isLoading: false });
     }
   },
 
-  // CRUD actions for document types
+  // --- DOCUMENT TYPES ---
+  fetchDocumentTypes: async () => {
+    console.log('🔄 fetchDocumentTypes: Iniciando llamada a API...');
+    try {
+      const { data } = await apiClient.get('/api/document-types');
+      console.log('✅ fetchDocumentTypes: Respuesta exitosa:', data);
+      set((state) => ({
+        documentTypes: data as DocumentType[],
+        lastUpdated: { ...state.lastUpdated, documentTypes: new Date().toISOString() },
+      }));
+    } catch (error) {
+      console.error('❌ fetchDocumentTypes: Error en API:', error);
+      set({ error: error instanceof Error ? error.message : 'Error desconocido' });
+    }
+  },
   createDocumentType: async (documentType) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await fetch('/api/master-data/document-types', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(documentType),
-      });
-
-      if (!response.ok) {
-        throw new Error('Error al crear tipo de documento');
-      }
-
-      const newDocumentType = await response.json();
+      const { data: newDocumentType } = await apiClient.post('/api/document-types', documentType);
       set((state) => ({
-        documentTypes: [...state.documentTypes, newDocumentType],
+        documentTypes: [...state.documentTypes, newDocumentType as DocumentType],
         isLoading: false,
       }));
     } catch (error) {
-      set({
-        error: error instanceof Error ? error.message : 'Error desconocido',
+      set({ error: error instanceof Error ? error.message : 'Error desconocido', isLoading: false });
+    }
+  },
+  updateDocumentType: async (id, documentType) => {
+    set({ isLoading: true, error: null });
+    try {
+      const { data: updatedDocumentType } = await apiClient.put(`/api/document-types/${id}`, documentType);
+      set((state) => ({
+        documentTypes: state.documentTypes.map((dt) => dt.documentTypeId === id ? updatedDocumentType as DocumentType : dt),
         isLoading: false,
-      });
+      }));
+    } catch (error) {
+      set({ error: error instanceof Error ? error.message : 'Error desconocido', isLoading: false });
+    }
+  },
+  deleteDocumentType: async (id) => {
+    set({ isLoading: true, error: null });
+    try {
+      await apiClient.delete(`/api/document-types/${id}`);
+      set((state) => ({
+        documentTypes: state.documentTypes.filter((dt) => dt.documentTypeId !== id),
+        isLoading: false,
+      }));
+    } catch (error) {
+      set({ error: error instanceof Error ? error.message : 'Error desconocido', isLoading: false });
     }
   },
 
-  updateDocumentType: async (id: number, documentType) => {
-    set({ isLoading: true, error: null });
+  // --- PAYMENT METHODS ---
+  fetchPaymentMethods: async () => {
     try {
-      const response = await fetch(`/api/master-data/document-types/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(documentType),
-      });
-
-      if (!response.ok) {
-        throw new Error('Error al actualizar tipo de documento');
-      }
-
-      const updatedDocumentType = await response.json();
+      const { data } = await apiClient.get(`${API_BASE_URL}/api/master-data/payment-methods`);
       set((state) => ({
-        documentTypes: state.documentTypes.map((dt) =>
-          dt.document_type_id === id ? updatedDocumentType : dt
-        ),
-        isLoading: false,
+        paymentMethods: data as PaymentMethod[],
+        lastUpdated: { ...state.lastUpdated, paymentMethods: new Date().toISOString() },
       }));
     } catch (error) {
-      set({
-        error: error instanceof Error ? error.message : 'Error desconocido',
-        isLoading: false,
-      });
+      set({ error: error instanceof Error ? error.message : 'Error desconocido' });
     }
   },
-
-  deleteDocumentType: async (id: number) => {
-    set({ isLoading: true, error: null });
+  // --- JOB TITLES ---
+  fetchJobTitles: async () => {
     try {
-      const response = await fetch(`/api/master-data/document-types/${id}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        throw new Error('Error al eliminar tipo de documento');
-      }
-
+      const { data } = await apiClient.get(`${API_BASE_URL}/api/master-data/job-titles`);
       set((state) => ({
-        documentTypes: state.documentTypes.filter((dt) => dt.document_type_id !== id),
-        isLoading: false,
+        jobTitles: data as JobTitle[],
+        lastUpdated: { ...state.lastUpdated, jobTitles: new Date().toISOString() },
       }));
     } catch (error) {
-      set({
-        error: error instanceof Error ? error.message : 'Error desconocido',
-        isLoading: false,
-      });
+      set({ error: error instanceof Error ? error.message : 'Error desconocido' });
+    }
+  },
+  // --- CATEGORIES ---
+  fetchCategories: async () => {
+    try {
+      const { data } = await apiClient.get(`${API_BASE_URL}/api/master-data/categories`);
+      set((state) => ({
+        categories: data as CategoryService[],
+        lastUpdated: { ...state.lastUpdated, categories: new Date().toISOString() },
+      }));
+    } catch (error) {
+      set({ error: error instanceof Error ? error.message : 'Error desconocido' });
     }
   },
 

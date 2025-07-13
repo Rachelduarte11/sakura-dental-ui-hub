@@ -1,12 +1,23 @@
 import { useAuthStore } from '../stores/authStore';
+import { API_BASE_URL, API_ENDPOINTS } from '../../config/api';
+import type { Patient } from '../stores/patientStore';
 
 // Configuración del cliente API
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const BASE_URL = API_BASE_URL;
 
 interface ApiResponse<T = any> {
   data: T;
   message?: string;
   error?: string;
+}
+
+// Tipos específicos para las respuestas
+interface PatientsResponse {
+  data: Patient[];
+}
+
+interface PatientResponse {
+  data: Patient;
 }
 
 interface ApiError {
@@ -70,6 +81,12 @@ class ApiClient {
   }
 
   async post<T>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
+    console.log('🔍 POST Request:', {
+      endpoint,
+      data,
+      fullUrl: `${this.baseURL}${endpoint}`,
+      stringifiedData: JSON.stringify(data)
+    });
     return this.request<T>(endpoint, {
       method: 'POST',
       body: JSON.stringify(data),
@@ -98,51 +115,103 @@ class ApiClient {
 }
 
 // Instancia global del cliente API
-export const apiClient = new ApiClient(API_BASE_URL);
+export const apiClient = new ApiClient(BASE_URL);
 
 // Hooks para usar el cliente API
 export const useApiClient = () => apiClient;
 
-// Funciones helper para endpoints específicos
+// Funciones helper para endpoints específicos usando tu configuración
 export const authApi = {
-  login: (email: string, password: string) => 
-    apiClient.post('/auth/login', { email, password }),
-  logout: () => apiClient.post('/auth/logout'),
+  login: (username: string, password: string) => {
+    console.log('🔍 Login API Call:', {
+      endpoint: API_ENDPOINTS.LOGIN.replace(API_BASE_URL, ''),
+      data: { username, password },
+      fullUrl: API_ENDPOINTS.LOGIN
+    });
+    return apiClient.post(API_ENDPOINTS.LOGIN.replace(API_BASE_URL, ''), { username, password });
+  },
+  logout: () => apiClient.post(API_ENDPOINTS.LOGOUT.replace(API_BASE_URL, '')),
   refreshToken: () => apiClient.post('/auth/refresh'),
 };
 
 export const patientsApi = {
-  getAll: (params?: Record<string, any>) => apiClient.get('/patients', params),
-  getById: (id: number) => apiClient.get(`/patients/${id}`),
-  create: (patient: any) => apiClient.post('/patients', patient),
-  update: (id: number, patient: any) => apiClient.put(`/patients/${id}`, patient),
-  delete: (id: number) => apiClient.delete(`/patients/${id}`),
+  getAll: (params?: Record<string, any>): Promise<ApiResponse<Patient[]>> => 
+    apiClient.get(API_ENDPOINTS.PATIENTS.replace(API_BASE_URL, ''), params),
+  getById: (id: number): Promise<ApiResponse<Patient>> => 
+    apiClient.get(`${API_ENDPOINTS.PATIENTS.replace(API_BASE_URL, '')}/${id}`),
+  create: (patient: Omit<Patient, 'patient_id' | 'created_at'>): Promise<ApiResponse<Patient>> => 
+    apiClient.post(API_ENDPOINTS.PATIENTS.replace(API_BASE_URL, ''), patient),
+  update: (id: number, patient: Partial<Patient>): Promise<ApiResponse<Patient>> => 
+    apiClient.put(`${API_ENDPOINTS.PATIENTS.replace(API_BASE_URL, '')}/${id}`, patient),
+  delete: (id: number): Promise<ApiResponse<void>> => 
+    apiClient.delete(`${API_ENDPOINTS.PATIENTS.replace(API_BASE_URL, '')}/${id}`),
 };
 
 export const servicesApi = {
-  getAll: (params?: Record<string, any>) => apiClient.get('/services', params),
-  getById: (id: number) => apiClient.get(`/services/${id}`),
-  create: (service: any) => apiClient.post('/services', service),
-  update: (id: number, service: any) => apiClient.put(`/services/${id}`, service),
-  delete: (id: number) => apiClient.delete(`/services/${id}`),
-  getCategories: () => apiClient.get('/services/categories'),
+  getAll: (params?: Record<string, any>) => apiClient.get(API_ENDPOINTS.SERVICES.replace(API_BASE_URL, ''), params),
+  getById: (id: number) => apiClient.get(`${API_ENDPOINTS.SERVICES.replace(API_BASE_URL, '')}/${id}`),
+  create: (service: any) => apiClient.post(API_ENDPOINTS.SERVICES.replace(API_BASE_URL, ''), service),
+  update: (id: number, service: any) => apiClient.put(`${API_ENDPOINTS.SERVICES.replace(API_BASE_URL, '')}/${id}`, service),
+  delete: (id: number) => apiClient.delete(`${API_ENDPOINTS.SERVICES.replace(API_BASE_URL, '')}/${id}`),
+  getCategories: () => apiClient.get(`${API_ENDPOINTS.SERVICES.replace(API_BASE_URL, '')}/categories`),
 };
 
 export const quotationsApi = {
-  getAll: (params?: Record<string, any>) => apiClient.get('/quotations', params),
-  getById: (id: number) => apiClient.get(`/quotations/${id}`),
-  create: (quotation: any) => apiClient.post('/quotations', quotation),
-  update: (id: number, quotation: any) => apiClient.put(`/quotations/${id}`, quotation),
-  delete: (id: number) => apiClient.delete(`/quotations/${id}`),
+  getAll: (params?: Record<string, any>) => apiClient.get(API_ENDPOINTS.QUOTES.replace(API_BASE_URL, ''), params),
+  getById: (id: number) => apiClient.get(`${API_ENDPOINTS.QUOTES.replace(API_BASE_URL, '')}/${id}`),
+  create: (quotation: any) => apiClient.post(API_ENDPOINTS.QUOTES.replace(API_BASE_URL, ''), quotation),
+  update: (id: number, quotation: any) => apiClient.put(`${API_ENDPOINTS.QUOTES.replace(API_BASE_URL, '')}/${id}`, quotation),
+  delete: (id: number) => apiClient.delete(`${API_ENDPOINTS.QUOTES.replace(API_BASE_URL, '')}/${id}`),
 };
 
 export const paymentsApi = {
-  getAll: (params?: Record<string, any>) => apiClient.get('/payments', params),
-  getById: (id: number) => apiClient.get(`/payments/${id}`),
-  create: (payment: any) => apiClient.post('/payments', payment),
+  getAll: (params?: Record<string, any>) => apiClient.get(API_ENDPOINTS.PAYMENTS.replace(API_BASE_URL, ''), params),
+  getById: (id: number) => apiClient.get(`${API_ENDPOINTS.PAYMENTS.replace(API_BASE_URL, '')}/${id}`),
+  create: (payment: any) => apiClient.post(API_ENDPOINTS.PAYMENTS.replace(API_BASE_URL, ''), payment),
   process: (quotationId: number, amount: number, methodId: number) => 
-    apiClient.post('/payments/process', { quotation_id: quotationId, amount, method_id: methodId }),
-  getMethods: () => apiClient.get('/payments/methods'),
+    apiClient.post(`${API_ENDPOINTS.PAYMENTS.replace(API_BASE_URL, '')}/process`, { quotation_id: quotationId, amount, method_id: methodId }),
+  getMethods: () => apiClient.get(`${API_ENDPOINTS.PAYMENTS.replace(API_BASE_URL, '')}/methods`),
+};
+
+// APIs adicionales según tu configuración
+export const doctorsApi = {
+  getAll: (params?: Record<string, any>) => apiClient.get(API_ENDPOINTS.DOCTORS.replace(API_BASE_URL, ''), params),
+  getById: (id: number) => apiClient.get(`${API_ENDPOINTS.DOCTORS.replace(API_BASE_URL, '')}/${id}`),
+  create: (doctor: any) => apiClient.post(API_ENDPOINTS.DOCTORS.replace(API_BASE_URL, ''), doctor),
+  update: (id: number, doctor: any) => apiClient.put(`${API_ENDPOINTS.DOCTORS.replace(API_BASE_URL, '')}/${id}`, doctor),
+  delete: (id: number) => apiClient.delete(`${API_ENDPOINTS.DOCTORS.replace(API_BASE_URL, '')}/${id}`),
+};
+
+export const inventoryApi = {
+  getAll: (params?: Record<string, any>) => apiClient.get(API_ENDPOINTS.INVENTORY.replace(API_BASE_URL, ''), params),
+  getById: (id: number) => apiClient.get(`${API_ENDPOINTS.INVENTORY.replace(API_BASE_URL, '')}/${id}`),
+  create: (item: any) => apiClient.post(API_ENDPOINTS.INVENTORY.replace(API_BASE_URL, ''), item),
+  update: (id: number, item: any) => apiClient.put(`${API_ENDPOINTS.INVENTORY.replace(API_BASE_URL, '')}/${id}`, item),
+  delete: (id: number) => apiClient.delete(`${API_ENDPOINTS.INVENTORY.replace(API_BASE_URL, '')}/${id}`),
+};
+
+export const salesApi = {
+  getAll: (params?: Record<string, any>) => apiClient.get(API_ENDPOINTS.SALES.replace(API_BASE_URL, ''), params),
+  getById: (id: number) => apiClient.get(`${API_ENDPOINTS.SALES.replace(API_BASE_URL, '')}/${id}`),
+  create: (sale: any) => apiClient.post(API_ENDPOINTS.SALES.replace(API_BASE_URL, ''), sale),
+  update: (id: number, sale: any) => apiClient.put(`${API_ENDPOINTS.SALES.replace(API_BASE_URL, '')}/${id}`, sale),
+  delete: (id: number) => apiClient.delete(`${API_ENDPOINTS.SALES.replace(API_BASE_URL, '')}/${id}`),
+};
+
+export const financesApi = {
+  getAll: (params?: Record<string, any>) => apiClient.get(API_ENDPOINTS.FINANCES.replace(API_BASE_URL, ''), params),
+  getById: (id: number) => apiClient.get(`${API_ENDPOINTS.FINANCES.replace(API_BASE_URL, '')}/${id}`),
+  create: (finance: any) => apiClient.post(API_ENDPOINTS.FINANCES.replace(API_BASE_URL, ''), finance),
+  update: (id: number, finance: any) => apiClient.put(`${API_ENDPOINTS.FINANCES.replace(API_BASE_URL, '')}/${id}`, finance),
+  delete: (id: number) => apiClient.delete(`${API_ENDPOINTS.FINANCES.replace(API_BASE_URL, '')}/${id}`),
+};
+
+export const agendaApi = {
+  getAll: (params?: Record<string, any>) => apiClient.get(API_ENDPOINTS.AGENDA.replace(API_BASE_URL, ''), params),
+  getById: (id: number) => apiClient.get(`${API_ENDPOINTS.AGENDA.replace(API_BASE_URL, '')}/${id}`),
+  create: (appointment: any) => apiClient.post(API_ENDPOINTS.AGENDA.replace(API_BASE_URL, ''), appointment),
+  update: (id: number, appointment: any) => apiClient.put(`${API_ENDPOINTS.AGENDA.replace(API_BASE_URL, '')}/${id}`, appointment),
+  delete: (id: number) => apiClient.delete(`${API_ENDPOINTS.AGENDA.replace(API_BASE_URL, '')}/${id}`),
 };
 
 export const masterDataApi = {

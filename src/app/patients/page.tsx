@@ -1,6 +1,6 @@
 'use client'
 
-import PatientManagement from '../../features/patients/components/PatientManagement';
+import PatientManagement from '../../features/patients/view/PatientManagement';
 import AppLayout from '../../shared/components/AppLayout';
 import { useRouter } from 'next/navigation';
 

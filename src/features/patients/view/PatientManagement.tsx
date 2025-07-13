@@ -13,19 +13,14 @@ import {
   DialogTrigger,
 } from '@/shared/components/ui/dialog';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/shared/components/ui/select';
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/shared/components/ui/dropdown-menu';
 import { usePatientStore, useMasterDataStore, type Patient } from '@/shared/stores';
+import { EmptyPatients } from '@/shared/components';
+import PatientForm from '../components/PatientForm';
 import { toast } from 'sonner';
 
 interface PatientManagementProps {
@@ -38,15 +33,15 @@ const PatientManagement: React.FC<PatientManagementProps> = ({ onBack, onPatient
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
   const [formData, setFormData] = useState({
-    first_name: '',
-    last_name: '',
+    firstName: '',
+    lastName: '',
     email: '',
-    phone: '',
-    birth_date: '',
-    doc_number: '',
-    district_id: 0,
-    gender_id: 0,
-    document_type_id: 0,
+    phoneNumber: '',
+    birthDate: '',
+    dni: '',
+    districtId: 0,
+    genderId: 0,
+    documentTypeId: 0,
     status: true
   });
 
@@ -116,15 +111,15 @@ const PatientManagement: React.FC<PatientManagementProps> = ({ onBack, onPatient
   const handleEdit = (patient: Patient) => {
     setEditingPatient(patient);
     setFormData({
-      first_name: patient.first_name,
-      last_name: patient.last_name,
+      firstName: patient.first_name || patient.firstName || '',
+      lastName: patient.last_name || patient.lastName || '',
       email: patient.email || '',
-      phone: patient.phone || '',
-      birth_date: patient.birth_date || '',
-      doc_number: patient.doc_number || '',
-      district_id: patient.district_id,
-      gender_id: patient.gender_id,
-      document_type_id: patient.document_type_id,
+      phoneNumber: patient.phone || '',
+      birthDate: patient.birth_date || patient.birthDate || '',
+      dni: patient.doc_number || patient.dni || '',
+      districtId: patient.district_id || patient.districtId || 0,
+      genderId: patient.gender_id || patient.genderId || 0,
+      documentTypeId: patient.document_type_id || patient.documentTypeId || 0,
       status: patient.status
     });
     setIsDialogOpen(true);
@@ -141,15 +136,15 @@ const PatientManagement: React.FC<PatientManagementProps> = ({ onBack, onPatient
 
   const resetForm = () => {
     setFormData({
-      first_name: '',
-      last_name: '',
+      firstName: '',
+      lastName: '',
       email: '',
-      phone: '',
-      birth_date: '',
-      doc_number: '',
-      district_id: 0,
-      gender_id: 0,
-      document_type_id: 0,
+      phoneNumber: '',
+      birthDate: '',
+      dni: '',
+      districtId: 0,
+      genderId: 0,
+      documentTypeId: 0,
       status: true
     });
     setEditingPatient(null);
@@ -245,107 +240,13 @@ const PatientManagement: React.FC<PatientManagementProps> = ({ onBack, onPatient
                   {editingPatient ? 'Editar Paciente' : 'Nuevo Paciente'}
                 </DialogTitle>
               </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="first_name">Nombre</Label>
-                    <Input
-                      id="first_name"
-                      value={formData.first_name}
-                      onChange={(e) => setFormData({...formData, first_name: e.target.value})}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="last_name">Apellido</Label>
-                    <Input
-                      id="last_name"
-                      value={formData.last_name}
-                      onChange={(e) => setFormData({...formData, last_name: e.target.value})}
-                      required
-                    />
-                  </div>
-                </div>
-                
-                <div>
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({...formData, email: e.target.value})}
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="phone">Teléfono</Label>
-                  <Input
-                    id="phone"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="doc_number">DNI</Label>
-                  <Input
-                    id="doc_number"
-                    value={formData.doc_number}
-                    onChange={(e) => setFormData({...formData, doc_number: e.target.value})}
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="birth_date">Fecha de nacimiento</Label>
-                  <Input
-                    id="birth_date"
-                    type="date"
-                    value={formData.birth_date}
-                    onChange={(e) => setFormData({...formData, birth_date: e.target.value})}
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="gender">Género</Label>
-                  <Select value={formData.gender_id.toString()} onValueChange={(value) => setFormData({...formData, gender_id: parseInt(value)})}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar género" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {genders.map((gender) => (
-                        <SelectItem key={gender.gender_id} value={gender.gender_id.toString()}>
-                          {gender.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="district">Distrito</Label>
-                  <Select value={formData.district_id.toString()} onValueChange={(value) => setFormData({...formData, district_id: parseInt(value)})}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar distrito" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {districts.map((district) => (
-                        <SelectItem key={district.district_id} value={district.district_id.toString()}>
-                          {district.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="flex gap-2 pt-4">
-                  <Button type="submit" className="flex-1">
-                    {editingPatient ? 'Actualizar' : 'Crear'}
-                  </Button>
-                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                    Cancelar
-                  </Button>
-                </div>
-              </form>
+              <PatientForm
+                formData={formData}
+                setFormData={setFormData}
+                isEditing={!!editingPatient}
+                onSubmit={handleSubmit}
+                onCancel={() => setIsDialogOpen(false)}
+              />
             </DialogContent>
           </Dialog>
         </div>
@@ -371,11 +272,22 @@ const PatientManagement: React.FC<PatientManagementProps> = ({ onBack, onPatient
             <Loader2 className="h-8 w-8 animate-spin text-sakura-red" />
             <span className="ml-2 text-sakura-gray">Cargando pacientes...</span>
           </div>
-        ) : filteredPatients.length === 0 ? (
+        ) : error ? (
           <div className="text-center py-8">
-            <User className="h-12 w-12 text-sakura-gray mx-auto mb-4" />
-            <p className="text-sakura-gray">No se encontraron pacientes</p>
+            <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+              <User className="h-12 w-12 text-red-400 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-red-800 mb-2">Error al cargar pacientes</h3>
+              <p className="text-red-600 mb-4">{error}</p>
+              <Button 
+                onClick={() => fetchPatients()}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                Reintentar
+              </Button>
+            </div>
           </div>
+        ) : filteredPatients.length === 0 ? (
+          <EmptyPatients onAddPatient={() => setIsDialogOpen(true)} />
         ) : (
           <div className="space-y-4">
             {filteredPatients.map((patient) => (

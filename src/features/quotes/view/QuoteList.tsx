@@ -5,6 +5,7 @@ import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button';
 import { Search, FileText, Download, MessageCircle, Send, Plus, ArrowLeft, Loader2 } from 'lucide-react';
 import { useQuotationStore, usePatientStore, type Quotation, type Patient } from '@/shared/stores';
+import { EmptyQuotes } from '@/shared/components';
 import { toast } from 'sonner';
 
 interface QuoteListProps {
@@ -157,11 +158,22 @@ const QuoteList: React.FC<QuoteListProps> = ({ onBack, onCreateNew }) => {
               <Loader2 className="h-8 w-8 animate-spin text-sakura-red" />
               <span className="ml-2 text-sakura-gray">Cargando cotizaciones...</span>
             </div>
-          ) : filteredQuotations.length === 0 ? (
+          ) : error ? (
             <div className="text-center py-8">
-              <FileText className="h-12 w-12 text-sakura-gray mx-auto mb-4" />
-              <p className="text-sakura-gray">No se encontraron cotizaciones</p>
+              <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+                <FileText className="h-12 w-12 text-red-400 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-red-800 mb-2">Error al cargar cotizaciones</h3>
+                <p className="text-red-600 mb-4">{error}</p>
+                <Button 
+                  onClick={() => fetchQuotations()}
+                  className="bg-red-600 hover:bg-red-700 text-white"
+                >
+                  Reintentar
+                </Button>
+              </div>
             </div>
+          ) : filteredQuotations.length === 0 ? (
+            <EmptyQuotes onCreateQuote={onCreateNew} />
           ) : (
                         filteredQuotations.map((quotation) => {
               const patient = patients.find(p => p.patient_id === quotation.patient_id);

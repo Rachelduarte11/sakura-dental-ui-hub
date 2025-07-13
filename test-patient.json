@@ -1,0 +1,9 @@
+{
+  "firstName": "Ana Sofia",
+  "lastName": "Martinez Torres",
+  "dni": "11223344",
+  "birthDate": "1992-03-15T00:00:00",
+  "phoneNumber": "+51 955 112 233",
+  "email": "ana.martinez@email.com",
+  "status": true
+} 
