@@ -44,7 +44,9 @@ const PatientForm: React.FC<PatientFormProps> = ({
     districts, 
     genders, 
     documentTypes, 
-    loadAllMasterData,
+    loadDistricts,
+    loadGenders,
+    loadDocumentTypes,
     isLoading,
     error
   } = useMasterData();
@@ -61,11 +63,36 @@ const PatientForm: React.FC<PatientFormProps> = ({
   }, [districts, genders, documentTypes, isLoading, error]);
 
   // Función para reintentar cargar datos maestros
-  const handleRetryLoadMasterData = () => {
+  const handleRetryLoadMasterData = async () => {
     console.log('🔄 PatientForm: Reintentando cargar datos maestros...');
-    loadAllMasterData().catch((error) => {
+    try {
+      await Promise.all([
+        loadDistricts(),
+        loadGenders(),
+        loadDocumentTypes()
+      ]);
+    } catch (error) {
       console.error('❌ PatientForm: Error en reintento:', error);
-    });
+    }
+  };
+
+  // Handlers para cargar datos cuando se abren los selects
+  const handleDistrictSelectOpen = async (open: boolean) => {
+    if (open && districts.length === 0) {
+      await loadDistricts();
+    }
+  };
+
+  const handleGenderSelectOpen = async (open: boolean) => {
+    if (open && genders.length === 0) {
+      await loadGenders();
+    }
+  };
+
+  const handleDocumentTypeSelectOpen = async (open: boolean) => {
+    if (open && documentTypes.length === 0) {
+      await loadDocumentTypes();
+    }
   };
 
   // Mostrar mensaje de error si hay problemas cargando datos maestros
@@ -176,6 +203,7 @@ const PatientForm: React.FC<PatientFormProps> = ({
           <Select 
             value={formData.documentTypeId ? formData.documentTypeId.toString() : ''} 
             onValueChange={(value) => setFormData({...formData, documentTypeId: parseInt(value)})}
+            onOpenChange={handleDocumentTypeSelectOpen}
             disabled={isLoading}
           >
             <SelectTrigger>
@@ -225,6 +253,7 @@ const PatientForm: React.FC<PatientFormProps> = ({
           <Select 
             value={formData.genderId ? formData.genderId.toString() : ''} 
             onValueChange={(value) => setFormData({...formData, genderId: parseInt(value)})}
+            onOpenChange={handleGenderSelectOpen}
             disabled={isLoading}
           >
             <SelectTrigger>
@@ -253,6 +282,7 @@ const PatientForm: React.FC<PatientFormProps> = ({
           <Select 
             value={formData.districtId ? formData.districtId.toString() : ''} 
             onValueChange={(value) => setFormData({...formData, districtId: parseInt(value)})}
+            onOpenChange={handleDistrictSelectOpen}
             disabled={isLoading}
           >
             <SelectTrigger>

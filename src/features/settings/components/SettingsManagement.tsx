@@ -70,65 +70,17 @@ const SettingsManagement: React.FC<SettingsManagementProps> = ({ onBack }) => {
     documentTypes,
     isLoading,
     error,
-    fetchDistricts, 
-    fetchGenders, 
-    fetchDocumentTypes,
-    createDistrict,
-    createGender,
-    createDocumentType,
-    updateDistrict,
-    updateGender,
-    updateDocumentType,
-    deleteDistrict,
-    deleteGender,
-    deleteDocumentType,
-    clearError 
-  } = useMasterData('districts');
-
-  const { 
-    genders: allGenders,
-    isLoading: gendersLoading,
-    error: gendersError,
-    fetchGenders: fetchAllGenders,
-    createGender: createAllGender,
-    updateGender: updateAllGender,
-    deleteGender: deleteAllGender,
-    clearError: clearGendersError
-  } = useMasterData('genders');
-
-  const { 
-    documentTypes: allDocumentTypes,
-    isLoading: documentTypesLoading,
-    error: documentTypesError,
-    fetchDocumentTypes: fetchAllDocumentTypes,
-    createDocumentType: createAllDocumentType,
-    updateDocumentType: updateAllDocumentType,
-    deleteDocumentType: deleteAllDocumentType,
-    clearError: clearDocumentTypesError
-  } = useMasterData('documentTypes');
-
-  // Cargar datos maestros al montar el componente
-  useEffect(() => {
-    fetchDistricts();
-    fetchAllGenders();
-    fetchAllDocumentTypes();
-  }, [fetchDistricts, fetchAllGenders, fetchAllDocumentTypes]);
+    districtsStore,
+    gendersStore,
+    documentTypesStore
+  } = useMasterData();
 
   // Manejar errores
   useEffect(() => {
     if (error) {
       toast.error(error);
-      clearError();
     }
-    if (gendersError) {
-      toast.error(gendersError);
-      clearGendersError();
-    }
-    if (documentTypesError) {
-      toast.error(documentTypesError);
-      clearDocumentTypesError();
-    }
-  }, [error, clearError, gendersError, clearGendersError, documentTypesError, clearDocumentTypesError]);
+  }, [error]);
 
   // Permisos disponibles
   const permissions: Permission[] = [
@@ -264,14 +216,14 @@ const SettingsManagement: React.FC<SettingsManagementProps> = ({ onBack }) => {
       return;
     }
 
-    try {
-      await createDistrict(newDistrict);
-      toast.success('Distrito agregado exitosamente');
-      setNewDistrict({ name: '', status: true });
-      setIsAddDistrictOpen(false);
-    } catch (error) {
-      toast.error('Error al agregar distrito');
-    }
+          try {
+        await districtsStore.createDistrict(newDistrict);
+        toast.success('Distrito agregado exitosamente');
+        setNewDistrict({ name: '', status: true });
+        setIsAddDistrictOpen(false);
+      } catch (error) {
+        toast.error('Error al agregar distrito');
+      }
   };
 
   const handleAddGender = async () => {
@@ -280,14 +232,14 @@ const SettingsManagement: React.FC<SettingsManagementProps> = ({ onBack }) => {
       return;
     }
 
-    try {
-      await createAllGender(newGender);
-      toast.success('Género agregado exitosamente');
-      setNewGender({ code: '', name: '', status: true });
-      setIsAddGenderOpen(false);
-    } catch (error) {
-      toast.error('Error al agregar género');
-    }
+          try {
+        await gendersStore.createGender(newGender);
+        toast.success('Género agregado exitosamente');
+        setNewGender({ code: '', name: '', status: true });
+        setIsAddGenderOpen(false);
+      } catch (error) {
+        toast.error('Error al agregar género');
+      }
   };
 
   const handleAddDocumentType = async () => {
@@ -296,17 +248,17 @@ const SettingsManagement: React.FC<SettingsManagementProps> = ({ onBack }) => {
       return;
     }
 
-    try {
-      await createAllDocumentType(newDocumentType);
-      toast.success('Tipo de documento agregado exitosamente');
-      setNewDocumentType({ code: '', name: '', status: true });
-      setIsAddDocumentTypeOpen(false);
-    } catch (error) {
-      toast.error('Error al agregar tipo de documento');
-    }
+          try {
+        await documentTypesStore.createDocumentType(newDocumentType);
+        toast.success('Tipo de documento agregado exitosamente');
+        setNewDocumentType({ code: '', name: '', status: true });
+        setIsAddDocumentTypeOpen(false);
+      } catch (error) {
+        toast.error('Error al agregar tipo de documento');
+      }
   };
 
-  if (isLoading || gendersLoading || documentTypesLoading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="flex items-center gap-2">

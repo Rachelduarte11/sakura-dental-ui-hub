@@ -42,7 +42,7 @@ export const useDocumentTypesStore = create<DocumentTypesState & DocumentTypesAc
     
     while (retryCount < maxRetries) {
       try {
-        const { data } = await apiClient.get('/api/document-type');
+        const { data } = await apiClient.get('/api/document-types');
         console.log('✅ fetchDocumentTypes: Respuesta exitosa:', data);
         set({
           documentTypes: data as DocumentType[],
@@ -72,7 +72,7 @@ export const useDocumentTypesStore = create<DocumentTypesState & DocumentTypesAc
   createDocumentType: async (documentType) => {
     set({ isLoading: true, error: null });
     try {
-      const { data: newDocumentType } = await apiClient.post('/api/document-type', documentType);
+      const { data: newDocumentType } = await apiClient.post('/api/document-types', documentType);
       set((state) => ({
         documentTypes: [...state.documentTypes, newDocumentType as DocumentType],
         isLoading: false,
@@ -85,7 +85,7 @@ export const useDocumentTypesStore = create<DocumentTypesState & DocumentTypesAc
   updateDocumentType: async (id, documentType) => {
     set({ isLoading: true, error: null });
     try {
-      const { data: updatedDocumentType } = await apiClient.put(`/api/document-type/${id}`, documentType);
+      const { data: updatedDocumentType } = await apiClient.put(`/api/document-types/${id}`, documentType);
       set((state) => ({
         documentTypes: state.documentTypes.map((dt) => dt.documentTypeId === id ? updatedDocumentType as DocumentType : dt),
         isLoading: false,
@@ -98,7 +98,7 @@ export const useDocumentTypesStore = create<DocumentTypesState & DocumentTypesAc
   deleteDocumentType: async (id) => {
     set({ isLoading: true, error: null });
     try {
-      await apiClient.delete(`/api/document-type/${id}`);
+      await apiClient.delete(`/api/document-types/${id}`);
       set((state) => ({
         documentTypes: state.documentTypes.filter((dt) => dt.documentTypeId !== id),
         isLoading: false,

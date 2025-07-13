@@ -62,13 +62,15 @@ const PatientManagement: React.FC<PatientManagementProps> = ({ onBack, onPatient
     districts, 
     genders, 
     documentTypes, 
-    loadAllMasterData 
+    loadDistricts,
+    loadGenders,
+    loadDocumentTypes
   } = useMasterData();
 
-  // Cargar datos al montar el componente
+  // Cargar datos al montar el componente solo si es necesario
   useEffect(() => {
     fetchPatients();
-    // loadAllMasterData is called automatically by the hook
+    // Los datos maestros se cargarán cuando se abran los selects en el formulario
   }, [fetchPatients]);
 
   // Manejar errores
@@ -90,15 +92,27 @@ const PatientManagement: React.FC<PatientManagementProps> = ({ onBack, onPatient
     patient.dni?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const toLocalDateTime = (dateStr: string) => {
+    if (!dateStr) return '';
+    if (dateStr.includes('T')) return dateStr;
+    return `${dateStr}T00:00:00`;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
+    // Formatea la fecha antes de enviar
+    const formDataToSend = {
+      ...formData,
+      birthDate: toLocalDateTime(formData.birthDate)
+    };
+
     try {
       if (editingPatient) {
-        await updatePatient(editingPatient.patientId, formData);
+        await updatePatient(editingPatient.patientId, formDataToSend);
         toast.success('Paciente actualizado exitosamente');
       } else {
-        await createPatient(formData);
+        await createPatient(formDataToSend);
         toast.success('Paciente creado exitosamente');
       }
       
@@ -292,7 +306,7 @@ const PatientManagement: React.FC<PatientManagementProps> = ({ onBack, onPatient
         ) : (
           <div className="space-y-4">
             {filteredPatients.map((patient) => (
-              <PatientCard key={patient.patient_id} patient={patient} />
+              <PatientCard key={patient.patientId} patient={patient} />
             ))}
           </div>
         )}

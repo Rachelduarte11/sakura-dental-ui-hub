@@ -47,15 +47,21 @@ const DoctorManagement: React.FC = () => {
 
   const {
     jobTitles,
-    districts,
-    genders,
-    documentTypes
+    loadJobTitles
   } = useMasterData();
 
-  // Cargar datos al montar el componente
+  // Cargar datos al montar el componente solo si es necesario
   useEffect(() => {
     fetchEmployees();
+    // Los datos maestros se cargarán cuando se abran los selects
   }, [fetchEmployees]);
+
+  // Handler para cargar job titles cuando se abre el select
+  const handleJobTitleSelectOpen = async (open: boolean) => {
+    if (open && jobTitles.length === 0) {
+      await loadJobTitles();
+    }
+  };
 
   // Manejar errores
   useEffect(() => {
@@ -174,7 +180,7 @@ const DoctorManagement: React.FC = () => {
                 </div>
                 <div>
                   <Label htmlFor="job_title">Cargo</Label>
-                  <Select onValueChange={(value) => setNewDoctor({ ...newDoctor, job_title_id: parseInt(value) })}>
+                  <Select onValueChange={(value) => setNewDoctor({ ...newDoctor, job_title_id: parseInt(value) })} onOpenChange={handleJobTitleSelectOpen}>
                     <SelectTrigger className="mt-1">
                       <SelectValue placeholder="Seleccionar cargo" />
                     </SelectTrigger>
