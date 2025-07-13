@@ -138,7 +138,7 @@ const PatientProfile: React.FC<PatientProfileProps> = ({ patientId, onBack }) =>
             </Button>
             <div>
               <h1 className="text-xl font-bold text-sakura-red">Perfil del Paciente</h1>
-              <p className="text-sm text-gray-600">ID: {selectedPatient.patient_id}</p>
+              <p className="text-sm text-gray-600">ID: {selectedPatient.patientId}</p>
             </div>
           </div>
           <Button variant="outline" className="border-sakura-red text-sakura-red hover:bg-sakura-red hover:text-white">
@@ -162,7 +162,7 @@ const PatientProfile: React.FC<PatientProfileProps> = ({ patientId, onBack }) =>
               <div className="space-y-4">
                 <div>
                   <h3 className="text-lg font-semibold text-gray-800">
-                    {`${selectedPatient.first_name} ${selectedPatient.last_name}`}
+                    {`${selectedPatient.firstName} ${selectedPatient.lastName}`}
                   </h3>
                   <Badge variant="secondary" className="mt-1 bg-green-100 text-green-700">
                     {selectedPatient.status ? 'Paciente Activo' : 'Paciente Inactivo'}
@@ -183,7 +183,7 @@ const PatientProfile: React.FC<PatientProfileProps> = ({ patientId, onBack }) =>
                   <div className="flex items-center gap-3">
                     <Calendar className="h-4 w-4 text-gray-500" />
                     <span className="text-gray-700">
-                      Registrado: {new Date(selectedPatient.created_at).toLocaleDateString()}
+                      Registrado: {new Date(selectedPatient.createdAt).toLocaleDateString()}
                     </span>
                   </div>
                 </div>
@@ -192,14 +192,14 @@ const PatientProfile: React.FC<PatientProfileProps> = ({ patientId, onBack }) =>
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
                   <FileText className="h-4 w-4 text-gray-500" />
-                  <span className="text-gray-700">DNI: {selectedPatient.doc_number || 'Sin documento'}</span>
+                  <span className="text-gray-700">DNI: {selectedPatient.dni || 'Sin documento'}</span>
                 </div>
                 
-                {selectedPatient.birth_date && (
+                {selectedPatient.birthDate && (
                   <div className="flex items-center gap-3">
                     <Calendar className="h-4 w-4 text-gray-500" />
                     <span className="text-gray-700">
-                      Nacimiento: {new Date(selectedPatient.birth_date).toLocaleDateString()}
+                      Nacimiento: {new Date(selectedPatient.birthDate).toLocaleDateString()}
                     </span>
                   </div>
                 )}

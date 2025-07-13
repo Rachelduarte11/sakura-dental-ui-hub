@@ -74,12 +74,12 @@ export const useAuthStore = create<AuthState & AuthActions>()(
               role_id: 1, // Default role
             };
             
-            set({
+          set({
               user: user,
               token: response.token,
-              isAuthenticated: true,
-              isLoading: false,
-            });
+            isAuthenticated: true,
+            isLoading: false,
+          });
           } else {
             throw new Error(response.message || 'Login failed');
           }

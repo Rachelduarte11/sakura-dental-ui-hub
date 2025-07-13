@@ -135,13 +135,13 @@ export const PatientList: React.FC<PatientListProps> = ({
           ) : (
             patients.map((patient) => (
               <div
-                key={patient.patient_id}
+                key={patient.patientId}
                 className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
               >
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <h3 className="font-medium">
-                      {patient.first_name} {patient.last_name}
+                      {patient.firstName} {patient.lastName}
                     </h3>
                     <Badge variant={patient.status ? "default" : "secondary"}>
                       {patient.status ? 'Activo' : 'Inactivo'}
@@ -150,7 +150,7 @@ export const PatientList: React.FC<PatientListProps> = ({
                   <div className="text-sm text-gray-600">
                     {patient.email && <div>Email: {patient.email}</div>}
                     {patient.phone && <div>Teléfono: {patient.phone}</div>}
-                    {patient.doc_number && <div>DNI: {patient.doc_number}</div>}
+                    {patient.dni && <div>DNI: {patient.dni}</div>}
                   </div>
                 </div>
                 <div className="flex gap-2">
@@ -166,7 +166,7 @@ export const PatientList: React.FC<PatientListProps> = ({
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleDelete(patient.patient_id)}
+                    onClick={() => handleDelete(patient.patientId)}
                   >
                     Eliminar
                   </Button>

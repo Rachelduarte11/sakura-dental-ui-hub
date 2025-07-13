@@ -56,10 +56,10 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children, currentScreen, onNaviga
   async function handleLogout() {
     try {
       // Call backend logout endpoint to clear cookie/session
-      await fetch(API_ENDPOINTS.LOGOUT, {
-        method: 'POST',
-        credentials: 'include',
-      });
+    await fetch(API_ENDPOINTS.LOGOUT, {
+      method: 'POST',
+      credentials: 'include',
+    });
     } catch (error) {
       console.error('Backend logout error:', error);
     } finally {
@@ -73,7 +73,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children, currentScreen, onNaviga
       }
       
       // Use window.location for a hard redirect to ensure clean state
-      window.location.href = '/login';
+    window.location.href = '/login';
     }
   }
 

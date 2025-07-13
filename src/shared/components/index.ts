@@ -10,4 +10,4 @@ export { default as EmptyState, EmptyQuotes, EmptyPatients, EmptySales, EmptyInv
 
 // Hooks
 export { useToast } from './ui/use-toast';
-export { useMobile } from '../hooks/use-mobile'; 
+export { useIsMobile as useMobile } from '../hooks/use-mobile'; 

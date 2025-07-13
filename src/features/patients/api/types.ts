@@ -1,33 +1,33 @@
 export interface Patient {
-  patient_id: number;
-  first_name: string;
-  last_name: string;
+  patientId: number;
+  firstName: string;
+  lastName: string;
   email?: string;
   phone?: string;
-  birth_date?: string;
-  doc_number?: string;
+  birthDate?: string;
+  dni?: string;
   status: boolean;
-  created_at: string;
-  district_id: number;
-  gender_id: number;
-  document_type_id: number;
+  createdAt: string;
+  districtId: number;
+  genderId: number;
+  documentTypeId: number;
 }
 
 export interface District {
-  district_id: number;
+  districtId: number;
   name: string;
   status: boolean;
 }
 
 export interface Gender {
-  gender_id: number;
+  genderId: number;
   code: string;
   name: string;
   status: boolean;
 }
 
 export interface DocumentType {
-  document_type_id: number;
+  documentTypeId: number;
   code: string;
   name: string;
   status: boolean;
@@ -36,6 +36,6 @@ export interface DocumentType {
 export interface PatientFilters {
   search: string;
   status: boolean | null;
-  district_id?: number;
-  gender_id?: number;
+  districtId?: number;
+  genderId?: number;
 } 

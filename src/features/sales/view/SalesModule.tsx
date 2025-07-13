@@ -74,7 +74,7 @@ const SalesModule: React.FC = () => {
 
   const handleQuoteSelect = (quotation: Quotation) => {
     // Buscar el paciente correspondiente a la cotización
-    const storePatient = patients.find(p => p.patient_id === quotation.patient_id);
+    const storePatient = patients.find(p => p.patientId === quotation.patient_id);
     if (storePatient) {
       // Mapear datos de la store a los tipos esperados por QuotePaymentProcessor
       const mappedQuote: Quote = {
@@ -93,12 +93,12 @@ const SalesModule: React.FC = () => {
       };
 
       const mappedPatient: Patient = {
-        id: storePatient.patient_id,
-        name: `${storePatient.first_name} ${storePatient.last_name}`,
+        id: storePatient.patientId,
+        name: `${storePatient.firstName} ${storePatient.lastName}`,
         phone: storePatient.phone || '',
         email: storePatient.email || '',
         medicalHistory: 'Sin historial', // TODO: Agregar campo de historial médico
-        dni: storePatient.doc_number || ''
+        dni: storePatient.dni || ''
       };
 
       setSelectedQuotation(mappedQuote);
