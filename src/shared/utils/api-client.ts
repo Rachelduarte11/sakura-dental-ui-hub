@@ -147,16 +147,31 @@ export const useApiClient = () => apiClient;
 
 // Funciones helper para endpoints específicos usando tu configuración
 export const authApi = {
-  login: (username: string, password: string) => {
-    console.log('🔍 Login API Call:', {
-      endpoint: API_ENDPOINTS.LOGIN.replace(API_BASE_URL, ''),
-      data: { username, password },
-      fullUrl: API_ENDPOINTS.LOGIN
+  login: async (username: string, password: string) => {
+    const response = await fetch(API_ENDPOINTS.LOGIN, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify({ username, password }),
     });
-    return apiClient.post(API_ENDPOINTS.LOGIN.replace(API_BASE_URL, ''), { username, password });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Login failed');
+    }
+    
+    return response.json();
   },
-  logout: () => apiClient.post(API_ENDPOINTS.LOGOUT.replace(API_BASE_URL, '')),
-  refreshToken: () => apiClient.post('/auth/refresh'),
+  
+  logout: async () => {
+    const response = await fetch(API_ENDPOINTS.LOGOUT, {
+      method: 'POST',
+      credentials: 'include',
+    });
+    return response.json();
+  },
 };
 
 export const patientsApi = {
@@ -238,6 +253,8 @@ export const agendaApi = {
   update: (id: number, appointment: any) => apiClient.put(`${API_ENDPOINTS.AGENDA.replace(API_BASE_URL, '')}/${id}`, appointment),
   delete: (id: number) => apiClient.delete(`${API_ENDPOINTS.AGENDA.replace(API_BASE_URL, '')}/${id}`),
 };
+
+
 
 export const masterDataApi = {
   getDistricts: () => apiClient.get('/master-data/districts'),
