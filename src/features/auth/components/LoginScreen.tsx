@@ -5,6 +5,7 @@ import { Input } from '@/shared/components/ui/input';
 import { Label } from '@/shared/components/ui/label';
 import { ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import SakuraIcon from '@/shared/components/SakuraIcon';
+import { API_ENDPOINTS } from '@/config/api';
 import { useAuthStore } from '@/shared/stores';
 import { toast } from 'sonner';
 
@@ -18,7 +19,9 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onBack, onLogin, onRegister }
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
 
+  const handleSubmit = async (e: React.FormEvent) => {
   const { login, isLoading, error, clearError, isAuthenticated } = useAuthStore();
 
   // Manejar errores de autenticación
@@ -38,6 +41,23 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onBack, onLogin, onRegister }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
+    try {
+      const res = await fetch(API_ENDPOINTS.LOGIN, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ username: email, password }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        onLogin();
+      } else {
+        setError(data.message || 'Login failed');
+      }
+    } catch (err) {
+      setError('Error de conexión con el servidor');
+    }
     if (!email || !password) {
       toast.error('Por favor completa todos los campos');
       return;
@@ -137,6 +157,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onBack, onLogin, onRegister }
             >
               {isLoading ? 'Ingresando...' : 'Ingresar'}
             </Button>
+            {error && <div className="text-center text-red-600 text-sm mt-2">{error}</div>}
           </form>
 
           {/* Social Login */}
