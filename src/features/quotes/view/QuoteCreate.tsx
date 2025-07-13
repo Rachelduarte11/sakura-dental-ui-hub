@@ -11,7 +11,8 @@ import {
   QuoteItem
 } from '../components';
 import QuoteFooterBar from '../components/QuoteFooterBar';
-import { usePatientStore, useQuotationStore, useCategorieServiceStore, type Patient as StorePatient } from '@/shared/stores';
+import { usePatientStore, useQuotationStore, type Patient as StorePatient } from '@/shared/stores';
+import { useCategorieServiceStore } from '@/features/services/store/categorieServiceStore';
 import { useServiceActions } from '@/features/services/hooks/useServiceActions';
 import { toast } from 'sonner';
 
