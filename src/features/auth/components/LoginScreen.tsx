@@ -1,16 +1,12 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 import { Label } from '@/shared/components/ui/label';
 import { ArrowLeft, Eye, EyeOff } from 'lucide-react';
-<<<<<<< Updated upstream
 import SakuraIcon from '@/shared/components/SakuraIcon';
-import { API_ENDPOINTS } from '@/config/api';
-=======
 import { useAuthStore } from '../../../shared/stores/authStore';
 import { toast } from 'sonner';
->>>>>>> Stashed changes
 
 interface LoginScreenProps {
   onBack: () => void;
@@ -20,28 +16,46 @@ interface LoginScreenProps {
 
 const LoginScreen: React.FC<LoginScreenProps> = ({ onBack, onLogin, onRegister }) => {
   const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [localError, setLocalError] = useState('');
+
+  const { login, isLoading, error, clearError } = useAuthStore();
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+
+  // Debug: Log authentication state changes
+  useEffect(() => {
+    console.log('🔍 LoginScreen - isAuthenticated changed:', isAuthenticated);
+  }, [isAuthenticated]);
+
+  // Manejar errores de autenticación
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
+      clearError();
+    }
+  }, [error, clearError]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    console.log('🔍 handleSubmit ejecutándose...');
+    setLocalError('');
+    
+    if (!username || !password) {
+      console.log('❌ Campos vacíos');
+      toast.error('Por favor completa todos los campos');
+      return;
+    }
+    
+    console.log('🔍 Intentando login con:', { username, password });
+    
     try {
-      const res = await fetch(API_ENDPOINTS.LOGIN, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ username: email, password }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        onLogin();
-      } else {
-        setError(data.message || 'Login failed');
-      }
-    } catch (err) {
-      setError('Error de conexión con el servidor');
+      await login(username, password);
+      console.log('🚀 Login exitoso, ejecutando onLogin');
+      onLogin();
+    } catch (error) {
+      console.error('❌ Error en login:', error);
+      // El error ya se maneja en el useEffect
     }
   };
 
@@ -74,15 +88,15 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onBack, onLogin, onRegister }
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-gray-700">
-                  Correo electrónico
+                <Label htmlFor="username" className="text-gray-700">
+                  Nombre de usuario
                 </Label>
                 <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="ingresa tu correo electrónico"
+                  id="username"
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="ingresa tu nombre de usuario"
                   className="h-12 bg-white shadow-simple-shadow border-0 focus:border-sakura-red focus:ring-sakura-red/20 rounded-xl"
                   required
                 />
@@ -127,11 +141,13 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onBack, onLogin, onRegister }
 
             <Button
               type="submit"
-              className="w-full h-14 bg-sakura-red hover:bg-sakura-red-dark text-white font-medium text-lg rounded-xl shadow-lg transition-all duration-200 hover:shadow-xl"
+              disabled={isLoading}
+              onClick={() => console.log('🔍 Botón clickeado')}
+              className="w-full h-14 bg-sakura-red hover:bg-sakura-red-dark text-white font-medium text-lg rounded-xl shadow-lg transition-all duration-200 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Ingresar
+              {isLoading ? 'Ingresando...' : 'Ingresar'}
             </Button>
-            {error && <div className="text-center text-red-600 text-sm mt-2">{error}</div>}
+            {localError && <div className="text-center text-red-600 text-sm mt-2">{localError}</div>}
           </form>
 
           {/* Social Login */}
