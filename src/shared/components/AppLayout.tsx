@@ -1,5 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 import { 
@@ -17,6 +18,7 @@ import {
   DropdownMenuSeparator,
 } from '@/shared/components/ui/dropdown-menu';
 import { API_ENDPOINTS } from '@/config/api';
+import { useAuthStore } from '@/shared/stores/authStore';
 
 type Screen = 'home' | 'agenda' | 'patients' | 'services' | 'sales' | 'inventory' | 'finances' | 'doctors' | 'quotes' | 'payments' | 'patient-account';
 
@@ -36,23 +38,43 @@ interface NavigationItem {
 const AppLayout: React.FC<AppLayoutProps> = ({ children, currentScreen, onNavigate, title }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [username, setUsername] = useState('');
+  const router = useRouter();
+  const logout = useAuthStore((state) => state.logout);
 
   useEffect(() => {
-    fetch(API_ENDPOINTS.USERNAME, {
-      credentials: 'include',
-    })
-      .then(res => res.json())
-      .then(data => {
-        if (data && data.username) setUsername(data.username);
-      });
+    // Get user info from auth store if available
+    const user = useAuthStore.getState().user;
+    if (user && user.username) {
+      setUsername(user.username);
+    } else {
+      // Fallback: try to get from token/cookie if auth store is empty
+      // For now, set a default or handle this case
+      setUsername('Usuario');
+    }
   }, []);
 
   async function handleLogout() {
-    await fetch(API_ENDPOINTS.LOGOUT, {
-      method: 'POST',
-      credentials: 'include',
-    });
-    window.location.href = '/login';
+    try {
+      // Call backend logout endpoint to clear cookie/session
+      await fetch(API_ENDPOINTS.LOGOUT, {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } catch (error) {
+      console.error('Backend logout error:', error);
+    } finally {
+      // Always clear frontend state and redirect, regardless of backend response
+      logout();
+      
+      // Force clear any remaining storage
+      if (typeof window !== 'undefined') {
+        localStorage.clear();
+        sessionStorage.clear();
+      }
+      
+      // Use window.location for a hard redirect to ensure clean state
+      window.location.href = '/login';
+    }
   }
 
   return (

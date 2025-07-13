@@ -5,7 +5,7 @@ export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost
 export const API_ENDPOINTS = {
   LOGIN: `${API_BASE_URL}/api/auth/login`,
   LOGOUT: `${API_BASE_URL}/api/auth/logout`,
-  USERNAME: `${API_BASE_URL}/api/users/username`,
+  USERNAME: `${API_BASE_URL}/api/auth/check`,
   USERS: `${API_BASE_URL}/api/users`,
   PATIENTS: `${API_BASE_URL}/api/patients`,
   PAYMENTS: `${API_BASE_URL}/api/payments`,
