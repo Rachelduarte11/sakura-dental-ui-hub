@@ -1,10 +1,12 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 import { Label } from '@/shared/components/ui/label';
 import { ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import SakuraIcon from '@/shared/components/SakuraIcon';
+import { useAuthStore } from '@/shared/stores';
+import { toast } from 'sonner';
 
 interface RegisterScreenProps {
   onBack: () => void;
@@ -22,14 +24,49 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onBack, onRegister, onL
     confirmPassword: ''
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const { isLoading, error, clearError, isAuthenticated } = useAuthStore();
+
+  // Manejar errores de autenticación
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
+      clearError();
+    }
+  }, [error, clearError]);
+
+  // Redirigir si ya está autenticado
+  useEffect(() => {
+    if (isAuthenticated) {
+      onRegister();
+    }
+  }, [isAuthenticated, onRegister]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Register attempt:', formData);
-    if (formData.password !== formData.confirmPassword) {
-      alert('Las contraseñas no coinciden');
+    
+    if (!formData.username || !formData.email || !formData.password || !formData.confirmPassword) {
+      toast.error('Por favor completa todos los campos');
       return;
     }
-    onRegister();
+
+    if (formData.password !== formData.confirmPassword) {
+      toast.error('Las contraseñas no coinciden');
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      toast.error('La contraseña debe tener al menos 6 caracteres');
+      return;
+    }
+
+    try {
+      // Aquí iría la lógica de registro
+      // Por ahora solo simulamos el registro
+      toast.success('Registro exitoso');
+      onRegister();
+    } catch (error) {
+      toast.error('Error en el registro');
+    }
   };
 
   const handleInputChange = (field: string, value: string) => {
@@ -159,9 +196,10 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onBack, onRegister, onL
 
             <Button
               type="submit"
-              className="w-full h-14 bg-sakura-red hover:bg-sakura-red-dark text-white font-medium text-lg rounded-xl shadow-lg transition-all duration-200 hover:shadow-xl"
+              disabled={isLoading}
+              className="w-full h-14 bg-sakura-red hover:bg-sakura-red-dark text-white font-medium text-lg rounded-xl shadow-lg transition-all duration-200 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Ingresar
+              {isLoading ? 'Registrando...' : 'Registrarse'}
             </Button>
           </form>
 

@@ -1,20 +1,21 @@
+'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Button } from '@/shared/components/ui/button';
-import { Input } from '@/shared/components/ui/input';
-import { Label } from '@/shared/components/ui/label';
+import { Button } from '../../../shared/components/ui/button';
+import { Input } from '../../../shared/components/ui/input';
+import { Label } from '../../../shared/components/ui/label';
+import SakuraIcon from '../../../shared/components/SakuraIcon';
 import { ArrowLeft, Eye, EyeOff } from 'lucide-react';
-import SakuraIcon from '@/shared/components/SakuraIcon';
 import { useAuthStore } from '../../../shared/stores/authStore';
 import { toast } from 'sonner';
 
 interface LoginScreenProps {
   onBack: () => void;
-  onLogin: () => void;
+  redirectTo: string;
   onRegister: () => void;
 }
 
-const LoginScreen: React.FC<LoginScreenProps> = ({ onBack, onLogin, onRegister }) => {
+const LoginScreen: React.FC<LoginScreenProps> = ({ onBack, redirectTo, onRegister }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -51,8 +52,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onBack, onLogin, onRegister }
     
     try {
       await login(username, password);
-      console.log('🚀 Login exitoso, ejecutando onLogin');
-      onLogin();
+      console.log('🚀 Login exitoso, redirigiendo a:', redirectTo);
+      window.location.href = redirectTo;
     } catch (error) {
       console.error('❌ Error en login:', error);
       // El error ya se maneja en el useEffect

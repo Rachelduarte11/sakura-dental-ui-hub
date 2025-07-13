@@ -20,7 +20,7 @@ import {
 import { API_ENDPOINTS } from '@/config/api';
 import { useAuthStore } from '@/shared/stores/authStore';
 
-type Screen = 'home' | 'agenda' | 'patients' | 'services' | 'sales' | 'inventory' | 'finances' | 'doctors' | 'quotes' | 'payments' | 'patient-account';
+type Screen = 'home' | 'agenda' | 'patients' | 'services' | 'sales' | 'inventory' | 'finances' | 'doctors' | 'quotes' | 'quotes-create' | 'payments';
 
 interface AppLayoutProps {
   children: React.ReactNode;

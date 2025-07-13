@@ -1,127 +1,123 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
+import { Label } from '@/shared/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Badge } from '@/shared/components/ui/badge';
-import { Search, Plus, Edit, Phone, Mail, Award } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/shared/components/ui/dialog';
-import { Label } from '@/shared/components/ui/label';
+import { Search, Plus, Edit, Trash2, ArrowUp, Loader2, User, Mail, Phone, Award } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/shared/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select';
-import { Textarea } from '@/shared/components/ui/textarea';
-
-interface Doctor {
-  id: number;
-  name: string;
-  speciality: string;
-  email: string;
-  phone: string;
-  licenseNumber: string;
-  commissionPercentage: number;
-  status: 'Activo' | 'Inactivo';
-  experience: string;
-  totalTreatments: number;
-  totalEarnings: number;
-  joinDate: string;
-}
+import { useEmployeeStore, type Employee } from '@/shared/stores';
+import { useMasterData } from '@/shared/hooks';
+import { toast } from 'sonner';
 
 const DoctorManagement: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [newDoctor, setNewDoctor] = useState({
-    name: '',
-    speciality: '',
+    first_name: '',
+    last_name: '',
     email: '',
     phone: '',
-    licenseNumber: '',
-    commissionPercentage: 60,
-    experience: '',
+    job_title_id: 0,
+    hired_at: new Date().toISOString().split('T')[0],
+    district_id: 1, // Default district
+    gender_id: 1, // Default gender
+    document_type_id: 1, // Default document type
+    status: true,
   });
 
-  // Mock data
-  const [doctors, setDoctors] = useState<Doctor[]>([
-    {
-      id: 1,
-      name: 'Dr. Carlos Mendoza',
-      speciality: 'Odontología General',
-      email: 'carlos.mendoza@sakuradental.com',
-      phone: '+51 999 123 456',
-      licenseNumber: 'COP-12345',
-      commissionPercentage: 60,
-      status: 'Activo',
-      experience: '8 años de experiencia en odontología general y preventiva.',
-      totalTreatments: 145,
-      totalEarnings: 12450.00,
-      joinDate: '2022-03-15',
-    },
-    {
-      id: 2,
-      name: 'Dra. Ana Rodriguez',
-      speciality: 'Ortodoncia',
-      email: 'ana.rodriguez@sakuradental.com',
-      phone: '+51 999 654 321',
-      licenseNumber: 'COP-67890',
-      commissionPercentage: 70,
-      status: 'Activo',
-      experience: '12 años especializándose en ortodoncia y alineadores dentales.',
-      totalTreatments: 89,
-      totalEarnings: 18750.00,
-      joinDate: '2021-08-20',
-    },
-    {
-      id: 3,
-      name: 'Dr. Miguel Torres',
-      speciality: 'Cirugía Oral',
-      email: 'miguel.torres@sakuradental.com',
-      phone: '+51 999 987 654',
-      licenseNumber: 'COP-54321',
-      commissionPercentage: 65,
-      status: 'Activo',
-      experience: '15 años en cirugía oral y maxilofacial.',
-      totalTreatments: 67,
-      totalEarnings: 15300.00,
-      joinDate: '2020-11-10',
-    },
-  ]);
+  const { 
+    employees, 
+    isLoading, 
+    error, 
+    fetchEmployees, 
+    createEmployee, 
+    updateEmployee, 
+    deleteEmployee,
+    clearError 
+  } = useEmployeeStore();
 
-  const specialities = [
-    'Odontología General',
-    'Ortodoncia',
-    'Endodoncia',
-    'Periodoncia',
-    'Cirugía Oral',
-    'Odontopediatría',
-    'Prostodoncia',
-    'Implantología',
-  ];
+  const {
+    jobTitles,
+    loadJobTitles
+  } = useMasterData();
 
-  const filteredDoctors = doctors.filter(doctor =>
-    doctor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    doctor.speciality.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    doctor.email.toLowerCase().includes(searchQuery.toLowerCase())
+  // Cargar datos al montar el componente solo si es necesario
+  useEffect(() => {
+    fetchEmployees();
+    // Los datos maestros se cargarán cuando se abran los selects
+  }, [fetchEmployees]);
+
+  // Handler para cargar job titles cuando se abre el select
+  const handleJobTitleSelectOpen = async (open: boolean) => {
+    if (open && jobTitles.length === 0) {
+      await loadJobTitles();
+    }
+  };
+
+  // Manejar errores
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
+      clearError();
+    }
+  }, [error, clearError]);
+
+  const filteredDoctors = employees.filter(employee =>
+    `${employee.first_name} ${employee.last_name}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    employee.email?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleAddDoctor = () => {
-    const doctor: Doctor = {
-      id: Date.now(),
-      ...newDoctor,
-      status: 'Activo',
-      totalTreatments: 0,
-      totalEarnings: 0,
-      joinDate: new Date().toISOString().split('T')[0],
-    };
-    setDoctors([...doctors, doctor]);
-    setNewDoctor({
-      name: '',
-      speciality: '',
-      email: '',
-      phone: '',
-      licenseNumber: '',
-      commissionPercentage: 60,
-      experience: '',
-    });
-    setIsAddDialogOpen(false);
+  const handleAddDoctor = async () => {
+    if (!newDoctor.first_name || !newDoctor.last_name || !newDoctor.email) {
+      toast.error('Por favor complete los campos requeridos');
+      return;
+    }
+
+    try {
+      await createEmployee(newDoctor);
+      toast.success('Doctor registrado exitosamente');
+      setNewDoctor({
+        first_name: '',
+        last_name: '',
+        email: '',
+        phone: '',
+        job_title_id: 0,
+        hired_at: new Date().toISOString().split('T')[0],
+        district_id: 1,
+        gender_id: 1,
+        document_type_id: 1,
+        status: true,
+      });
+      setIsAddDialogOpen(false);
+    } catch (error) {
+      toast.error('Error al registrar doctor');
+    }
   };
+
+  const getJobTitleName = (jobTitleId: number) => {
+    const jobTitle = jobTitles.find(jt => jt.job_title_id === jobTitleId);
+    return jobTitle?.name || 'Sin especificar';
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="flex items-center gap-2">
+          <Loader2 className="h-6 w-6 animate-spin" />
+          <span>Cargando doctores...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white">
@@ -142,28 +138,24 @@ const DoctorManagement: React.FC = () => {
               </DialogHeader>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="name">Nombre Completo</Label>
+                  <Label htmlFor="first_name">Nombre</Label>
                   <Input
-                    id="name"
-                    value={newDoctor.name}
-                    onChange={(e) => setNewDoctor({ ...newDoctor, name: e.target.value })}
+                    id="first_name"
+                    value={newDoctor.first_name}
+                    onChange={(e) => setNewDoctor({ ...newDoctor, first_name: e.target.value })}
                     className="mt-1"
+                    placeholder="Ingrese el nombre"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="speciality">Especialidad</Label>
-                  <Select onValueChange={(value) => setNewDoctor({ ...newDoctor, speciality: value })}>
-                    <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="Seleccionar especialidad" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white">
-                      {specialities.map((speciality) => (
-                        <SelectItem key={speciality} value={speciality}>
-                          {speciality}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="last_name">Apellido</Label>
+                  <Input
+                    id="last_name"
+                    value={newDoctor.last_name}
+                    onChange={(e) => setNewDoctor({ ...newDoctor, last_name: e.target.value })}
+                    className="mt-1"
+                    placeholder="Ingrese el apellido"
+                  />
                 </div>
                 <div>
                   <Label htmlFor="email">Correo Electrónico</Label>
@@ -173,6 +165,7 @@ const DoctorManagement: React.FC = () => {
                     value={newDoctor.email}
                     onChange={(e) => setNewDoctor({ ...newDoctor, email: e.target.value })}
                     className="mt-1"
+                    placeholder="ejemplo@email.com"
                   />
                 </div>
                 <div>
@@ -182,37 +175,32 @@ const DoctorManagement: React.FC = () => {
                     value={newDoctor.phone}
                     onChange={(e) => setNewDoctor({ ...newDoctor, phone: e.target.value })}
                     className="mt-1"
+                    placeholder="+51 999 999 999"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="license">Número de Colegiatura</Label>
+                  <Label htmlFor="job_title">Cargo</Label>
+                  <Select onValueChange={(value) => setNewDoctor({ ...newDoctor, job_title_id: parseInt(value) })} onOpenChange={handleJobTitleSelectOpen}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Seleccionar cargo" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white">
+                      {jobTitles.map((jobTitle) => (
+                        <SelectItem key={jobTitle.job_title_id} value={jobTitle.job_title_id.toString()}>
+                          {jobTitle.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="hired_at">Fecha de Contratación</Label>
                   <Input
-                    id="license"
-                    value={newDoctor.licenseNumber}
-                    onChange={(e) => setNewDoctor({ ...newDoctor, licenseNumber: e.target.value })}
+                    id="hired_at"
+                    type="date"
+                    value={newDoctor.hired_at}
+                    onChange={(e) => setNewDoctor({ ...newDoctor, hired_at: e.target.value })}
                     className="mt-1"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="commission">Porcentaje de Comisión (%)</Label>
-                  <Input
-                    id="commission"
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={newDoctor.commissionPercentage}
-                    onChange={(e) => setNewDoctor({ ...newDoctor, commissionPercentage: parseInt(e.target.value) || 0 })}
-                    className="mt-1"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="experience">Experiencia</Label>
-                  <Textarea
-                    id="experience"
-                    value={newDoctor.experience}
-                    onChange={(e) => setNewDoctor({ ...newDoctor, experience: e.target.value })}
-                    className="mt-1"
-                    rows={3}
                   />
                 </div>
                 <Button onClick={handleAddDoctor} className="w-full bg-sakura-red hover:bg-sakura-red-dark">
@@ -224,101 +212,82 @@ const DoctorManagement: React.FC = () => {
         </div>
       </div>
 
-      <div className="p-4 space-y-6">
-        {/* Search Bar */}
+      {/* Search Bar */}
+      <div className="p-4 border-b border-sakura-gray-medium">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-sakura-gray" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-sakura-gray h-4 w-4" />
           <Input
+            placeholder="Buscar doctores..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Buscar doctores por nombre, especialidad o correo..."
-            className="pl-10 h-12 border-sakura-gray-medium focus:border-sakura-red rounded-xl"
+            className="pl-10"
           />
         </div>
+      </div>
 
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card>
-            <CardContent className="p-6">
-              <div className="text-2xl font-bold text-sakura-red">{doctors.length}</div>
-              <p className="text-sm text-gray-600">Doctores Activos</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-6">
-              <div className="text-2xl font-bold text-green-600">
-                {doctors.reduce((sum, d) => sum + d.totalTreatments, 0)}
-              </div>
-              <p className="text-sm text-gray-600">Tratamientos Totales</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-6">
-              <div className="text-2xl font-bold text-blue-600">
-                S/ {doctors.reduce((sum, d) => sum + d.totalEarnings, 0).toFixed(2)}
-              </div>
-              <p className="text-sm text-gray-600">Comisiones Totales</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Doctors Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {filteredDoctors.map((doctor) => (
-            <Card key={doctor.id} className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg">{doctor.name}</CardTitle>
-                  <Badge variant={doctor.status === 'Activo' ? 'default' : 'secondary'}>
-                    {doctor.status}
-                  </Badge>
-                </div>
-                <p className="text-sakura-red font-medium">{doctor.speciality}</p>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div className="flex items-center gap-2">
-                    <Mail className="h-4 w-4 text-gray-500" />
-                    <span className="truncate">{doctor.email}</span>
+      {/* Content */}
+      <div className="p-4">
+        {filteredDoctors.length === 0 ? (
+          <div className="text-center py-12">
+            <User className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No hay doctores registrados</h3>
+            <p className="text-gray-500 mb-6">Comience registrando el primer doctor del sistema</p>
+            <Button 
+              onClick={() => setIsAddDialogOpen(true)}
+              className="bg-sakura-red hover:bg-sakura-red-dark"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Registrar Doctor
+            </Button>
+          </div>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {filteredDoctors.map((doctor) => (
+              <Card key={doctor.employee_id} className="shadow-sm border-sakura-gray-medium/30 hover:shadow-md transition-shadow">
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <CardTitle className="text-lg font-semibold text-gray-800">
+                        {doctor.first_name} {doctor.last_name}
+                      </CardTitle>
+                      <p className="text-sm text-sakura-gray mt-1">
+                        {getJobTitleName(doctor.job_title_id)}
+                      </p>
+                    </div>
+                    <Badge variant={doctor.status ? "default" : "secondary"}>
+                      {doctor.status ? 'Activo' : 'Inactivo'}
+                    </Badge>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Phone className="h-4 w-4 text-gray-500" />
-                    <span>{doctor.phone}</span>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <Mail className="h-4 w-4 text-sakura-red" />
+                    <span>{doctor.email}</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Award className="h-4 w-4 text-gray-500" />
-                    <span>{doctor.licenseNumber}</span>
+                  {doctor.phone && (
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <Phone className="h-4 w-4 text-sakura-red" />
+                      <span>{doctor.phone}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <Award className="h-4 w-4 text-sakura-red" />
+                    <span>Contratado: {new Date(doctor.hired_at).toLocaleDateString()}</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">Comisión: {doctor.commissionPercentage}%</span>
+                  <div className="flex gap-2 mt-3">
+                    <Button variant="outline" size="sm" className="flex-1">
+                      <Edit className="h-3 w-3 mr-1" />
+                      Editar
+                    </Button>
+                    <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
                   </div>
-                </div>
-
-                <div className="bg-gray-50 rounded-lg p-3">
-                  <p className="text-sm text-gray-700">{doctor.experience}</p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 text-center">
-                  <div>
-                    <div className="text-lg font-bold text-sakura-red">{doctor.totalTreatments}</div>
-                    <div className="text-xs text-gray-600">Tratamientos</div>
-                  </div>
-                  <div>
-                    <div className="text-lg font-bold text-green-600">S/ {doctor.totalEarnings.toFixed(2)}</div>
-                    <div className="text-xs text-gray-600">Comisiones</div>
-                  </div>
-                </div>
-
-                <div className="flex gap-2">
-                  <Button variant="outline" className="flex-1 border-sakura-red text-sakura-red hover:bg-sakura-red/10">
-                    <Edit className="h-4 w-4 mr-2" />
-                    Editar
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

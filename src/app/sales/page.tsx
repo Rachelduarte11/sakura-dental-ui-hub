@@ -1,6 +1,6 @@
 'use client'
 
-import SalesModule from '../../features/sales/components/SalesModule'
+import SalesModule from '../../features/sales/view/SalesModule'
 import AppLayout from '../../shared/components/AppLayout'
 import { useRouter } from 'next/navigation'
 
