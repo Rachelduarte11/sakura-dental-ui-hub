@@ -23,7 +23,7 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
   // Verificar si el usuario está autenticado
-  const token = request.cookies.get('auth-token')?.value;
+  const token = request.cookies.get('token')?.value;
   const isAuthenticated = !!token;
 
   // Si es una ruta protegida y no está autenticado

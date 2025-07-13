@@ -7,7 +7,6 @@ export * from './inventoryStore';
 export * from './paymentStore';
 export * from './quotationStore';
 export * from './serviceStore';
-export * from '../../features/services/store/categorieServiceStore';
 
 // Export new modularized stores (these replace the old masterDataStore exports)
 export * from './districtsStore';
