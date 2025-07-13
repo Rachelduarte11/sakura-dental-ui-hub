@@ -4,15 +4,11 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '../../../shared/components/ui/button';
 import { Input } from '../../../shared/components/ui/input';
 import { Label } from '../../../shared/components/ui/label';
-import SakuraIcon from '../../../shared/components/SakuraIcon';
 import { ArrowLeft, Eye, EyeOff } from 'lucide-react';
-<<<<<<< Updated upstream
 import SakuraIcon from '@/shared/components/SakuraIcon';
 import { API_ENDPOINTS } from '@/config/api';
-=======
 import { useAuthStore } from '../../../shared/stores/authStore';
 import { toast } from 'sonner';
->>>>>>> Stashed changes
 
 interface LoginScreenProps {
   onBack: () => void;
