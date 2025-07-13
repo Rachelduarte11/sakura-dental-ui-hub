@@ -1,16 +1,16 @@
 export interface Service {
-  service_id: number;
+  serviceId: number;
   name: string;
   description: string;
-  price: number;
-  duration: number;
+  basePrice: number;
   status: boolean;
-  created_at: string;
-  categorie_service_id: number;
+  categorieServiceId: number;
+  createdAt?: string;
+  [key: string]: any; // Permitir campos extra
 }
 
-export interface ServiceCategory {
-  categorie_service_id: number;
+export interface CategorieService {
+  categorieServiceId: number;
   name: string;
   description: string;
   status: boolean;
@@ -18,8 +18,8 @@ export interface ServiceCategory {
 
 export interface ServiceFilters {
   search: string;
-  categoryId: number | null;
-  status: boolean | null;
+  categorieServiceId?: number | null;
+  status?: boolean | null;
   minPrice?: number;
   maxPrice?: number;
 } 
