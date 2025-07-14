@@ -15,9 +15,11 @@ import {
   DollarSign,
   User,
   Stethoscope,
-  Loader2
+  Loader2,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
-import { usePatientStore, usePaymentStore, useQuotationStore, type Patient, type Payment, type Quotation } from '@/shared/stores';
+import { usePatientStore, usePaymentStore, useQuotationStore, usePatientQuotationsWithPayments, type Patient, type Payment, type Quotation } from '@/shared/stores';
 import { toast } from 'sonner';
 import { pdfService } from '@/shared/services/pdfService';
 
@@ -27,39 +29,43 @@ interface PatientProfileProps {
 }
 
 const PatientProfile: React.FC<PatientProfileProps> = ({ patientId, onBack }) => {
+  // Pagination states
+  const [paymentsPage, setPaymentsPage] = useState(1);
+  const [quotationsPage, setQuotationsPage] = useState(1);
+  const itemsPerPage = 5;
   const { 
     selectedPatient, 
     patientQuotations,
+    patientPayments,
     services,
     isLoading: patientLoading, 
     isLoadingQuotations,
+    isLoadingPayments,
     isLoadingServices,
     error: patientError, 
     quotationsError,
+    paymentsError,
     servicesError,
     fetchPatientById, 
     fetchPatientQuotations,
+    fetchPatientPayments,
     fetchServices,
     clearError: clearPatientError,
     clearQuotationsError,
+    clearPaymentsError,
     clearServicesError
   } = usePatientStore();
 
-  const { 
-    payments, 
-    isLoading: paymentsLoading, 
-    error: paymentsError, 
-    fetchPayments, 
-    clearError: clearPaymentsError 
-  } = usePaymentStore();
+  // Use the new selector for combined quotations with payments
+  const quotationsWithPayments = usePatientQuotationsWithPayments();
 
   // Cargar datos al montar el componente
   useEffect(() => {
     fetchPatientById(patientId);
     fetchPatientQuotations(patientId);
+    fetchPatientPayments(patientId);
     fetchServices();
-    fetchPayments();
-  }, [patientId, fetchPatientById, fetchPatientQuotations, fetchServices, fetchPayments]);
+  }, [patientId, fetchPatientById, fetchPatientQuotations, fetchPatientPayments, fetchServices]);
 
   // Manejar errores
   useEffect(() => {
@@ -81,13 +87,64 @@ const PatientProfile: React.FC<PatientProfileProps> = ({ patientId, onBack }) =>
     }
   }, [patientError, quotationsError, servicesError, paymentsError, clearPatientError, clearQuotationsError, clearServicesError, clearPaymentsError]);
 
-  // Filtrar pagos del paciente
-  const patientPayments = payments.filter(payment => {
-    const quotation = patientQuotations.find(q => q.quotationId === payment.quotation_id);
-    return quotation?.patientId === patientId;
-  });
+  const isLoading = patientLoading || isLoadingQuotations || isLoadingPayments || isLoadingServices;
 
-  const isLoading = patientLoading || isLoadingQuotations || isLoadingServices || paymentsLoading;
+  // Pagination helper component
+  const PaginationControls = ({ 
+    currentPage, 
+    totalItems, 
+    onPageChange 
+  }: { 
+    currentPage: number; 
+    totalItems: number; 
+    onPageChange: (page: number) => void; 
+  }) => {
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    
+    if (totalPages <= 1) return null;
+    
+    return (
+      <div className="flex items-center justify-between mt-4 pt-4 border-t">
+        <div className="text-sm text-gray-600">
+          Mostrando {Math.min((currentPage - 1) * itemsPerPage + 1, totalItems)} - {Math.min(currentPage * itemsPerPage, totalItems)} de {totalItems}
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onPageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Anterior
+          </Button>
+          <span className="text-sm text-gray-600">
+            Página {currentPage} de {totalPages}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onPageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+          >
+            Siguiente
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    );
+  };
+
+  // Paginated data
+  const paginatedQuotationsWithPayments = quotationsWithPayments.slice(
+    (paymentsPage - 1) * itemsPerPage,
+    paymentsPage * itemsPerPage
+  );
+
+  const paginatedQuotations = patientQuotations.slice(
+    (quotationsPage - 1) * itemsPerPage,
+    quotationsPage * itemsPerPage
+  );
 
   // Handle PDF export
   const handlePDFExport = async (quotation: Quotation) => {
@@ -303,28 +360,55 @@ Gracias por confiar en Sakura Dental!`;
                 <CardTitle>Historial de Pagos</CardTitle>
               </CardHeader>
               <CardContent>
-                {patientPayments.length > 0 ? (
-                  <div className="space-y-4">
-                    {patientPayments.map((payment) => (
-                      <div key={payment.payment_id} className="flex items-center justify-between p-4 border rounded-lg">
-                        <div className="flex-1">
+                {quotationsWithPayments.length > 0 ? (
+                  <div className="space-y-6">
+                    {paginatedQuotationsWithPayments.map((quotation) => (
+                      <div key={quotation.quotationId} className="border rounded-lg p-4">
+                        <div className="flex items-center justify-between mb-4">
                           <div className="flex items-center gap-3">
-                            <span className="font-medium">S/ {payment.amount.toFixed(2)}</span>
-                            {getStatusBadge(payment.status)}
+                            <h4 className="font-semibold">Cotización #{quotation.quotationId}</h4>
+                            {getStatusBadge(quotation.status)}
                           </div>
-                          <p className="text-sm text-gray-600 mt-1">
-                            {new Date(payment.payment_date).toLocaleDateString()}
-                          </p>
-                          {payment.method && (
-                            <p className="text-sm text-gray-500 mt-1">Método: {payment.method.name}</p>
-                          )}
+                          <div className="text-right">
+                            <div className="text-lg font-bold text-sakura-red">S/ {quotation.totalAmount.toFixed(2)}</div>
+                            <div className="text-sm text-green-600">Pagado: S/ {quotation.totalPaid.toFixed(2)}</div>
+                            <div className="text-sm text-red-600">Pendiente: S/ {quotation.pending.toFixed(2)}</div>
+                          </div>
                         </div>
+                        
+                        {quotation.payments.length > 0 ? (
+                          <div className="space-y-2">
+                            <h5 className="text-sm font-medium text-gray-700">Historial de Pagos:</h5>
+                            {quotation.payments.map((payment) => (
+                              <div key={payment.paymentId} className="flex items-center justify-between p-3 bg-gray-50 rounded">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-3">
+                                    <span className="font-medium">S/ {payment.amount.toFixed(2)}</span>
+                                    {getStatusBadge(payment.status)}
+                                  </div>
+                                  <p className="text-sm text-gray-600 mt-1">
+                                    {payment.paymentDate ? new Date(payment.paymentDate).toLocaleDateString() : 'N/A'}
+                                  </p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-sm text-gray-500 italic">
+                            Sin pagos registrados para esta cotización
+                          </div>
+                        )}
                       </div>
-                    ))}
+                                          ))}
+                    <PaginationControls
+                      currentPage={paymentsPage}
+                      totalItems={quotationsWithPayments.length}
+                      onPageChange={setPaymentsPage}
+                    />
                   </div>
                 ) : (
                   <div className="text-center py-8 text-gray-500">
-                    No hay pagos registrados para este paciente
+                    No hay cotizaciones registradas para este paciente
                   </div>
                 )}
               </CardContent>
@@ -339,7 +423,7 @@ Gracias por confiar en Sakura Dental!`;
               <CardContent>
                 {patientQuotations.length > 0 ? (
                   <div className="space-y-4">
-                    {patientQuotations.map((quotation) => (
+                    {paginatedQuotations.map((quotation) => (
                       <div key={quotation.quotationId} className="bg-white border rounded-lg p-6 shadow-sm">
                         {/* Header with title and status */}
                         <div className="flex items-center justify-between mb-4">
@@ -417,6 +501,11 @@ Gracias por confiar en Sakura Dental!`;
                         </div>
                       </div>
                     ))}
+                    <PaginationControls
+                      currentPage={quotationsPage}
+                      totalItems={patientQuotations.length}
+                      onPageChange={setQuotationsPage}
+                    />
                   </div>
                 ) : (
                   <div className="text-center py-8 text-gray-500">

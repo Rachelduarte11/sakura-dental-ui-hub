@@ -49,6 +49,21 @@ export interface Service {
   categoryName?: string;
 }
 
+// Payment interface
+export interface Payment {
+  paymentId?: number;
+  quotationId: number;
+  methodId: number;
+  amount: number;
+  balanceRemaining: number;
+  status: string;
+  createdBy: number;
+  paymentDate?: string;
+  canceledBy?: number;
+  documentType?: string;
+  documentNumber?: string;
+}
+
 // Configuración del cliente API
 const BASE_URL = API_BASE_URL;
 
@@ -270,6 +285,7 @@ export const quotationsApi = {
 export const paymentsApi = {
   getAll: (params?: Record<string, any>) => apiClient.get(API_ENDPOINTS.PAYMENTS.replace(API_BASE_URL, ''), params),
   getById: (id: number) => apiClient.get(`${API_ENDPOINTS.PAYMENTS.replace(API_BASE_URL, '')}/${id}`),
+  getByPatientId: (patientId: number) => apiClient.get(`${API_ENDPOINTS.PAYMENTS.replace(API_BASE_URL, '')}/patient/${patientId}`),
   create: (payment: any) => apiClient.post(API_ENDPOINTS.PAYMENTS.replace(API_BASE_URL, ''), payment),
   process: (quotationId: number, amount: number, methodId: number) => 
     apiClient.post(`${API_ENDPOINTS.PAYMENTS.replace(API_BASE_URL, '')}/process`, { quotation_id: quotationId, amount, method_id: methodId }),
