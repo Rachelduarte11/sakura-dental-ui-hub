@@ -1,13 +1,19 @@
 import { create } from 'zustand';
-import { patientsApi, type Patient } from '../utils/api-client';
+import { patientsApi, quotationsApi, servicesApi, type Patient, type Quotation, type Service } from '../utils/api-client';
 
-export type { Patient };
+export type { Patient, Quotation, Service };
 
 interface PatientState {
   patients: Patient[];
   selectedPatient: Patient | null;
+  patientQuotations: Quotation[];
+  services: Service[];
   isLoading: boolean;
+  isLoadingQuotations: boolean;
+  isLoadingServices: boolean;
   error: string | null;
+  quotationsError: string | null;
+  servicesError: string | null;
   filters: {
     search: string;
     status: boolean | null;
@@ -19,6 +25,8 @@ interface PatientActions {
   fetchPatients: () => Promise<void>;
   fetchPatientById: (id: number) => Promise<void>;
   searchPatients: (searchTerm: string) => Promise<void>;
+  fetchPatientQuotations: (patientId: number) => Promise<void>;
+  fetchServices: () => Promise<void>;
   
   // CRUD actions
   createPatient: (patient: Omit<Patient, 'patientId' | 'createdAt'>) => Promise<void>;
@@ -29,6 +37,8 @@ interface PatientActions {
   setSelectedPatient: (patient: Patient | null) => void;
   setFilters: (filters: Partial<PatientState['filters']>) => void;
   clearError: () => void;
+  clearQuotationsError: () => void;
+  clearServicesError: () => void;
   setLoading: (loading: boolean) => void;
 }
 
@@ -36,8 +46,14 @@ export const usePatientStore = create<PatientState & PatientActions>((set, get) 
   // State
   patients: [],
   selectedPatient: null,
+  patientQuotations: [],
+  services: [],
   isLoading: false,
+  isLoadingQuotations: false,
+  isLoadingServices: false,
   error: null,
+  quotationsError: null,
+  servicesError: null,
   filters: {
     search: '',
     status: null,
@@ -79,6 +95,32 @@ export const usePatientStore = create<PatientState & PatientActions>((set, get) 
       set({
         error: error instanceof Error ? error.message : 'Error al buscar pacientes',
         isLoading: false,
+      });
+    }
+  },
+
+  fetchPatientQuotations: async (patientId: number) => {
+    set({ isLoadingQuotations: true, quotationsError: null });
+    try {
+      const response = await quotationsApi.getByPatientId(patientId);
+      set({ patientQuotations: response.data || [], isLoadingQuotations: false });
+    } catch (error) {
+      set({
+        quotationsError: error instanceof Error ? error.message : 'Error al cargar cotizaciones',
+        isLoadingQuotations: false,
+      });
+    }
+  },
+
+  fetchServices: async () => {
+    set({ isLoadingServices: true, servicesError: null });
+    try {
+      const response = await servicesApi.getAll();
+      set({ services: response.data || [], isLoadingServices: false });
+    } catch (error) {
+      set({
+        servicesError: error instanceof Error ? error.message : 'Error al cargar servicios',
+        isLoadingServices: false,
       });
     }
   },
@@ -147,6 +189,14 @@ export const usePatientStore = create<PatientState & PatientActions>((set, get) 
 
   clearError: () => {
     set({ error: null });
+  },
+
+  clearQuotationsError: () => {
+    set({ quotationsError: null });
+  },
+
+  clearServicesError: () => {
+    set({ servicesError: null });
   },
 
   setLoading: (loading) => {

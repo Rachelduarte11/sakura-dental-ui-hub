@@ -17,6 +17,38 @@ export interface Patient {
   documentTypeId: number;
 }
 
+// Quotation interfaces
+export interface QuotationItem {
+  itemId?: number;
+  serviceId: number;
+  quantity: number;
+  unitPrice: number;
+  subtotal: number;
+  serviceName?: string;
+  serviceDescription?: string;
+}
+
+export interface Quotation {
+  quotationId?: number;
+  patientId: number;
+  historyId?: number;
+  totalAmount: number;
+  status: 'PENDIENTE' | 'ACEPTADA' | 'RECHAZADA' | 'PAGADA' | 'ANULADA';
+  createdAt?: string;
+  items?: QuotationItem[];
+}
+
+// Service interface
+export interface Service {
+  serviceId: number;
+  name: string;
+  description: string;
+  basePrice: number;
+  status: boolean;
+  categoryId: number;
+  categoryName?: string;
+}
+
 // Configuración del cliente API
 const BASE_URL = API_BASE_URL;
 
@@ -205,20 +237,34 @@ export const patientsApi = {
 };
 
 export const servicesApi = {
-  getAll: (params?: Record<string, any>) => apiClient.get(API_ENDPOINTS.SERVICES.replace(API_BASE_URL, ''), params),
-  getById: (id: number) => apiClient.get(`${API_ENDPOINTS.SERVICES.replace(API_BASE_URL, '')}/${id}`),
-  create: (service: any) => apiClient.post(API_ENDPOINTS.SERVICES.replace(API_BASE_URL, ''), service),
-  update: (id: number, service: any) => apiClient.put(`${API_ENDPOINTS.SERVICES.replace(API_BASE_URL, '')}/${id}`, service),
-  delete: (id: number) => apiClient.delete(`${API_ENDPOINTS.SERVICES.replace(API_BASE_URL, '')}/${id}`),
+  getAll: (params?: Record<string, any>): Promise<ApiResponse<Service[]>> => 
+    apiClient.get(API_ENDPOINTS.SERVICES.replace(API_BASE_URL, ''), params),
+  getById: (id: number): Promise<ApiResponse<Service>> => 
+    apiClient.get(`${API_ENDPOINTS.SERVICES.replace(API_BASE_URL, '')}/${id}`),
+  create: (service: Omit<Service, 'serviceId'>): Promise<ApiResponse<Service>> => 
+    apiClient.post(API_ENDPOINTS.SERVICES.replace(API_BASE_URL, ''), service),
+  update: (id: number, service: Partial<Service>): Promise<ApiResponse<Service>> => 
+    apiClient.put(`${API_ENDPOINTS.SERVICES.replace(API_BASE_URL, '')}/${id}`, service),
+  delete: (id: number): Promise<ApiResponse<void>> => 
+    apiClient.delete(`${API_ENDPOINTS.SERVICES.replace(API_BASE_URL, '')}/${id}`),
+  search: (searchTerm: string): Promise<ApiResponse<Service[]>> => 
+    apiClient.get(`${API_ENDPOINTS.SERVICES.replace(API_BASE_URL, '')}/search`, { searchTerm }),
   getCategories: () => apiClient.get(`${API_ENDPOINTS.SERVICES.replace(API_BASE_URL, '')}/categories`),
 };
 
 export const quotationsApi = {
-  getAll: (params?: Record<string, any>) => apiClient.get(API_ENDPOINTS.QUOTES.replace(API_BASE_URL, ''), params),
-  getById: (id: number) => apiClient.get(`${API_ENDPOINTS.QUOTES.replace(API_BASE_URL, '')}/${id}`),
-  create: (quotation: any) => apiClient.post(API_ENDPOINTS.QUOTES.replace(API_BASE_URL, ''), quotation),
-  update: (id: number, quotation: any) => apiClient.put(`${API_ENDPOINTS.QUOTES.replace(API_BASE_URL, '')}/${id}`, quotation),
-  delete: (id: number) => apiClient.delete(`${API_ENDPOINTS.QUOTES.replace(API_BASE_URL, '')}/${id}`),
+  getAll: (params?: Record<string, any>): Promise<ApiResponse<Quotation[]>> => 
+    apiClient.get(API_ENDPOINTS.QUOTES.replace(API_BASE_URL, ''), params),
+  getById: (id: number): Promise<ApiResponse<Quotation>> => 
+    apiClient.get(`${API_ENDPOINTS.QUOTES.replace(API_BASE_URL, '')}/${id}`),
+  getByPatientId: (patientId: number): Promise<ApiResponse<Quotation[]>> => 
+    apiClient.get(`${API_ENDPOINTS.QUOTES.replace(API_BASE_URL, '')}/patient/${patientId}`),
+  create: (quotation: Omit<Quotation, 'quotationId' | 'createdAt'>): Promise<ApiResponse<Quotation>> => 
+    apiClient.post(API_ENDPOINTS.QUOTES.replace(API_BASE_URL, ''), quotation),
+  update: (id: number, quotation: Partial<Quotation>): Promise<ApiResponse<Quotation>> => 
+    apiClient.put(`${API_ENDPOINTS.QUOTES.replace(API_BASE_URL, '')}/${id}`, quotation),
+  delete: (id: number): Promise<ApiResponse<void>> => 
+    apiClient.delete(`${API_ENDPOINTS.QUOTES.replace(API_BASE_URL, '')}/${id}`),
 };
 
 export const paymentsApi = {

@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { usePatientStore, usePaymentStore, useQuotationStore, type Patient, type Payment, type Quotation } from '@/shared/stores';
 import { toast } from 'sonner';
+import { pdfService } from '@/shared/services/pdfService';
 
 interface PatientProfileProps {
   patientId: number;
@@ -28,10 +29,20 @@ interface PatientProfileProps {
 const PatientProfile: React.FC<PatientProfileProps> = ({ patientId, onBack }) => {
   const { 
     selectedPatient, 
+    patientQuotations,
+    services,
     isLoading: patientLoading, 
+    isLoadingQuotations,
+    isLoadingServices,
     error: patientError, 
+    quotationsError,
+    servicesError,
     fetchPatientById, 
-    clearError: clearPatientError 
+    fetchPatientQuotations,
+    fetchServices,
+    clearError: clearPatientError,
+    clearQuotationsError,
+    clearServicesError
   } = usePatientStore();
 
   const { 
@@ -42,20 +53,13 @@ const PatientProfile: React.FC<PatientProfileProps> = ({ patientId, onBack }) =>
     clearError: clearPaymentsError 
   } = usePaymentStore();
 
-  const { 
-    quotations, 
-    isLoading: quotationsLoading, 
-    error: quotationsError, 
-    fetchQuotations, 
-    clearError: clearQuotationsError 
-  } = useQuotationStore();
-
   // Cargar datos al montar el componente
   useEffect(() => {
     fetchPatientById(patientId);
+    fetchPatientQuotations(patientId);
+    fetchServices();
     fetchPayments();
-    fetchQuotations();
-  }, [patientId, fetchPatientById, fetchPayments, fetchQuotations]);
+  }, [patientId, fetchPatientById, fetchPatientQuotations, fetchServices, fetchPayments]);
 
   // Manejar errores
   useEffect(() => {
@@ -63,25 +67,96 @@ const PatientProfile: React.FC<PatientProfileProps> = ({ patientId, onBack }) =>
       toast.error(patientError);
       clearPatientError();
     }
-    if (paymentsError) {
-      toast.error(paymentsError);
-      clearPaymentsError();
-    }
     if (quotationsError) {
       toast.error(quotationsError);
       clearQuotationsError();
     }
-  }, [patientError, paymentsError, quotationsError, clearPatientError, clearPaymentsError, clearQuotationsError]);
+    if (servicesError) {
+      toast.error(servicesError);
+      clearServicesError();
+    }
+    if (paymentsError) {
+      toast.error(paymentsError);
+      clearPaymentsError();
+    }
+  }, [patientError, quotationsError, servicesError, paymentsError, clearPatientError, clearQuotationsError, clearServicesError, clearPaymentsError]);
 
-  // Filtrar pagos y cotizaciones del paciente
+  // Filtrar pagos del paciente
   const patientPayments = payments.filter(payment => {
-    const quotation = quotations.find(q => q.quotation_id === payment.quotation_id);
-    return quotation?.patient_id === patientId;
+    const quotation = patientQuotations.find(q => q.quotationId === payment.quotation_id);
+    return quotation?.patientId === patientId;
   });
 
-  const patientQuotations = quotations.filter(quotation => quotation.patient_id === patientId);
+  const isLoading = patientLoading || isLoadingQuotations || isLoadingServices || paymentsLoading;
 
-  const isLoading = patientLoading || paymentsLoading || quotationsLoading;
+  // Handle PDF export
+  const handlePDFExport = async (quotation: Quotation) => {
+    if (!selectedPatient) {
+      toast.error('No se pudo cargar la información del paciente');
+      return;
+    }
+
+    try {
+      await pdfService.generateQuotationPDF({
+        quotation,
+        patient: selectedPatient
+      });
+      toast.success('PDF generado exitosamente');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error('Error al generar el PDF');
+    }
+  };
+
+  // Handle WhatsApp send
+  const handleWhatsAppSend = async (quotation: Quotation) => {
+    if (!selectedPatient) {
+      toast.error('No se pudo cargar la información del paciente');
+      return;
+    }
+
+    try {
+      // First generate and download the PDF
+      await pdfService.generateQuotationPDF({
+        quotation,
+        patient: selectedPatient
+      });
+
+      // Check if patient has phone number
+      if (!selectedPatient.phone) {
+        toast.error('El paciente no tiene número de teléfono registrado');
+        return;
+      }
+
+      // Clean phone number (remove spaces, dashes, parentheses, and +)
+      const cleanPhone = selectedPatient.phone.replace(/[\s\-\(\)\+]/g, '');
+      
+      // Ensure phone starts with country code (51 for Peru)
+      const phone = cleanPhone.startsWith('51') ? cleanPhone : `51${cleanPhone}`;
+
+      // Create WhatsApp message (without emojis for better compatibility)
+      const message = `Hola ${selectedPatient.firstName}, aquí tienes tu cotización #${quotation.quotationId}.
+
+Cotización: #${quotation.quotationId}
+Paciente: ${selectedPatient.firstName} ${selectedPatient.lastName}
+Total: S/ ${quotation.totalAmount.toFixed(2)}
+Fecha: ${quotation.createdAt ? new Date(quotation.createdAt).toLocaleDateString('es-ES') : 'N/A'}
+Tratamientos: ${quotation.items?.length || 0}
+
+Gracias por confiar en Sakura Dental!`;
+
+      // Open WhatsApp Web
+      const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+      window.open(whatsappUrl, '_blank');
+      
+      toast.success('PDF descargado y WhatsApp abierto. Busca el archivo PDF en tu carpeta de descargas y adjúntalo al chat.', {
+        duration: 5000
+      });
+    } catch (error) {
+      console.error('Error preparing WhatsApp message:', error);
+      toast.error('Error al preparar el mensaje de WhatsApp');
+    }
+  };
 
   if (isLoading) {
     return (
@@ -265,18 +340,80 @@ const PatientProfile: React.FC<PatientProfileProps> = ({ patientId, onBack }) =>
                 {patientQuotations.length > 0 ? (
                   <div className="space-y-4">
                     {patientQuotations.map((quotation) => (
-                      <div key={quotation.quotation_id} className="flex items-center justify-between p-4 border rounded-lg">
-                        <div className="flex-1">
+                      <div key={quotation.quotationId} className="bg-white border rounded-lg p-6 shadow-sm">
+                        {/* Header with title and status */}
+                        <div className="flex items-center justify-between mb-4">
                           <div className="flex items-center gap-3">
-                            <span className="font-medium">S/ {quotation.total_amount.toFixed(2)}</span>
+                            <h3 className="text-lg font-semibold text-gray-900">
+                              Cotización #{quotation.quotationId}
+                            </h3>
                             {getStatusBadge(quotation.status)}
                           </div>
-                          <p className="text-sm text-gray-600 mt-1">
-                            {new Date(quotation.created_at).toLocaleDateString()}
-                          </p>
-                          <p className="text-sm text-gray-500 mt-1">
-                            ID: {quotation.quotation_id}
-                          </p>
+                          <div className="text-right">
+                            <div className="text-2xl font-bold text-sakura-red">
+                              S/ {quotation.totalAmount.toFixed(2)}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {quotation.items?.length || 0} tratamiento{(quotation.items?.length || 0) !== 1 ? 's' : ''}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Patient info and date */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 text-sm text-gray-600">
+                          <div>
+                            <span className="font-medium">Paciente:</span> {selectedPatient?.firstName} {selectedPatient?.lastName}
+                          </div>
+                          <div>
+                            <span className="font-medium">Fecha:</span> {quotation.createdAt ? new Date(quotation.createdAt).toLocaleDateString('es-ES', { 
+                              day: 'numeric', 
+                              month: 'long', 
+                              year: 'numeric' 
+                            }) : 'N/A'}
+                          </div>
+                          {selectedPatient?.phone && (
+                            <div>
+                              <span className="font-medium">Teléfono:</span> {selectedPatient.phone}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Services/Treatments */}
+                        {quotation.items && quotation.items.length > 0 && (
+                          <div className="mb-4">
+                            <div className="flex flex-wrap gap-2">
+                              {quotation.items.map((item, index) => (
+                                <div key={item.itemId || index} className="bg-gray-100 px-3 py-1 rounded-full text-sm">
+                                  <span className="font-medium">{item.serviceName || 'Servicio'}</span>
+                                  {item.quantity > 1 && (
+                                    <span className="text-gray-600 ml-1">x{item.quantity}</span>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Action buttons */}
+                        <div className="flex gap-2 pt-4 border-t">
+                          <button 
+                            onClick={() => handlePDFExport(quotation)}
+                            className="flex items-center gap-2 px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                          >
+                            <FileText className="h-4 w-4" />
+                            Descargar PDF
+                          </button>
+                          <button 
+                            onClick={() => handleWhatsAppSend(quotation)}
+                            className="flex items-center gap-2 px-4 py-2 text-sm bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                          >
+                            <Phone className="h-4 w-4" />
+                            Enviar por WhatsApp
+                          </button>
+                          <button className="flex items-center gap-2 px-4 py-2 text-sm border border-blue-300 text-blue-700 rounded-lg hover:bg-blue-50 transition-colors">
+                            <Mail className="h-4 w-4" />
+                            Email
+                          </button>
                         </div>
                       </div>
                     ))}
