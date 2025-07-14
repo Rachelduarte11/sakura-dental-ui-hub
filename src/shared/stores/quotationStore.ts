@@ -67,6 +67,7 @@ interface QuotationActions {
   setFilters: (filters: Partial<QuotationState['filters']>) => void;
   clearError: () => void;
   setLoading: (loading: boolean) => void;
+  getQuotationDetail: (quotationId: number) => Promise<any>;
 }
 
 // Mock data para desarrollo
@@ -156,22 +157,30 @@ export const useQuotationStore = create<QuotationState & QuotationActions>((set,
   fetchQuotations: async () => {
     set({ isLoading: true, error: null });
     try {
-      // Por ahora usamos datos mock mientras el backend no esté listo
-      // const { filters } = get();
-      // const params: Record<string, any> = {};
-      
-      // if (filters.search) params.search = filters.search;
-      // if (filters.status) params.status = filters.status;
-      // if (filters.patientId) params.patientId = filters.patientId;
-      // if (filters.dateFrom) params.dateFrom = filters.dateFrom;
-      // if (filters.dateTo) params.dateTo = filters.dateTo;
+      // Petición real al backend
+      const response = await fetch('http://localhost:8080/api/quotations');
+      const data = await response.json();
 
-      // const response = await quotationsApi.getAll(params);
-      // set({ quotations: response.data, isLoading: false });
-      
-      // Simular delay de red
-      await new Promise(resolve => setTimeout(resolve, 500));
-      set({ quotations: mockQuotations, isLoading: false });
+      // Mapeo de camelCase a snake_case
+      const quotations = data.map((q: any) => ({
+        quotation_id: q.quotationId,
+        created_at: q.createdAt,
+        status: q.status,
+        total_amount: q.totalAmount,
+        history_id: q.historyId,
+        patient_id: q.patientId,
+        items: q.items?.map((item: any) => ({
+          item_id: item.itemId,
+          service_id: item.serviceId,
+          quantity: item.quantity,
+          unit_price: item.unitPrice,
+          subtotal: item.subtotal,
+          service_name: item.serviceName,
+          service_description: item.serviceDescription,
+        })) || [],
+      }));
+
+      set({ quotations, isLoading: false });
     } catch (error) {
       set({
         error: error instanceof Error ? error.message : 'Error desconocido',
@@ -299,6 +308,21 @@ export const useQuotationStore = create<QuotationState & QuotationActions>((set,
     }
   },
 
+  // Método para obtener el detalle de pagos de una cotización
+  getQuotationDetail: async (quotationId: number) => {
+    try {
+      const response = await fetch(`http://localhost:8080/api/quotations/${quotationId}`);
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: No se pudo obtener el detalle de la cotización`);
+      }
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error fetching quotation detail:', error);
+      throw error;
+    }
+  },
+
   // State management
   setSelectedQuotation: (quotation) => {
     set({ selectedQuotation: quotation });
@@ -316,5 +340,12 @@ export const useQuotationStore = create<QuotationState & QuotationActions>((set,
 
   setLoading: (loading) => {
     set({ isLoading: loading });
+  },
+
+  // Método para obtener el detalle de pagos de una cotización
+  getQuotationDetail: async (quotationId: number) => {
+    const res = await fetch(`http://localhost:8080/api/quotations/${quotationId}`);
+    if (!res.ok) throw new Error('No se pudo obtener el detalle de la cotización');
+    return await res.json();
   },
 })); 

@@ -1,11 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
 import PatientQuoteSelector from './PatientQuoteSelector';
+import PaymentConfiguration from '../components/PaymentConfiguration';
 import QuotePaymentProcessor from '../components/QuotePaymentProcessor';
 import { useQuotationStore, usePatientStore, type Quotation, type Patient as StorePatient } from '@/shared/stores';
 import { toast } from 'sonner';
+import type { PaymentConfig } from '../components/PaymentConfiguration';
 
-type SalesStep = 'select' | 'process';
+type SalesStep = 'select' | 'configure' | 'process';
 
 // Tipos esperados por QuotePaymentProcessor
 interface Quote {
@@ -33,10 +35,21 @@ interface Patient {
   dni: string;
 }
 
+interface SelectedService {
+  serviceId: number;
+  serviceName: string;
+  quantity: number;
+  unitPrice: number;
+  subtotal: number;
+  selected: boolean;
+}
+
 const SalesModule: React.FC = () => {
   const [currentStep, setCurrentStep] = useState<SalesStep>('select');
   const [selectedQuotation, setSelectedQuotation] = useState<Quote | null>(null);
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
+  const [selectedServices, setSelectedServices] = useState<SelectedService[]>([]);
+  const [paymentConfig, setPaymentConfig] = useState<PaymentConfig | null>(null);
 
   const { 
     quotations, 
@@ -72,57 +85,79 @@ const SalesModule: React.FC = () => {
     }
   }, [quotationsError, patientsError, clearQuotationsError, clearPatientsError]);
 
-  const handleQuoteSelect = (quotation: Quotation) => {
+  const handleQuoteSelect = (quotation: Quotation, selectedServicesList: SelectedService[]) => {
     // Buscar el paciente correspondiente a la cotización
-    const storePatient = patients.find(p => p.patient_id === quotation.patient_id);
+    const storePatient = patients.find(p => p.patientId === quotation.patient_id);
     if (storePatient) {
       // Mapear datos de la store a los tipos esperados por QuotePaymentProcessor
       const mappedQuote: Quote = {
         id: quotation.quotation_id,
         patientId: quotation.patient_id,
         date: quotation.created_at,
-        total: quotation.total_amount,
+        total: selectedServicesList.reduce((sum, service) => sum + service.subtotal, 0), // Usar solo servicios seleccionados
         status: quotation.status === 'PENDIENTE' ? 'pending' : 
                 quotation.status === 'PAGADA' ? 'completed' : 'partial',
-        services: quotation.items?.map(item => ({
-          id: item.item_id,
-          name: 'Servicio', // TODO: Obtener nombre del servicio desde la store de servicios
-          price: item.unit_price,
-          category: 'General'
-        })) || []
+        services: selectedServicesList.map(service => ({
+          id: service.serviceId,
+          name: service.serviceName,
+          price: service.unitPrice,
+          category: 'General' // TODO: Obtener categoría del servicio desde la store de servicios
+        }))
       };
 
       const mappedPatient: Patient = {
-        id: storePatient.patient_id,
-        name: `${storePatient.first_name} ${storePatient.last_name}`,
+        id: storePatient.patientId,
+        name: `${storePatient.firstName} ${storePatient.lastName}`,
         phone: storePatient.phone || '',
         email: storePatient.email || '',
         medicalHistory: 'Sin historial', // TODO: Agregar campo de historial médico
-        dni: storePatient.doc_number || ''
+        dni: storePatient.dni || ''
       };
 
       setSelectedQuotation(mappedQuote);
       setSelectedPatient(mappedPatient);
-      setCurrentStep('process');
+      setSelectedServices(selectedServicesList);
+      setCurrentStep('configure');
     }
   };
 
-  const handleBack = () => {
+  const handlePaymentConfig = (config: PaymentConfig) => {
+    setPaymentConfig(config);
+    setCurrentStep('process');
+  };
+
+  const handleBackToSelect = () => {
     setCurrentStep('select');
     setSelectedQuotation(null);
     setSelectedPatient(null);
+    setSelectedServices([]);
+    setPaymentConfig(null);
+  };
+
+  const handleBackToConfigure = () => {
+    setCurrentStep('configure');
   };
 
   return (
     <div className="p-6">
       {currentStep === 'select' ? (
         <PatientQuoteSelector onQuoteSelect={handleQuoteSelect} />
-      ) : (
+      ) : currentStep === 'configure' ? (
         selectedQuotation && selectedPatient && (
+          <PaymentConfiguration
+            quote={selectedQuotation}
+            patient={selectedPatient}
+            onBack={handleBackToSelect}
+            onContinue={handlePaymentConfig}
+          />
+        )
+      ) : (
+        selectedQuotation && selectedPatient && paymentConfig && (
           <QuotePaymentProcessor
             quote={selectedQuotation}
             patient={selectedPatient}
-            onBack={handleBack}
+            paymentConfig={paymentConfig}
+            onBack={handleBackToConfigure}
           />
         )
       )}
