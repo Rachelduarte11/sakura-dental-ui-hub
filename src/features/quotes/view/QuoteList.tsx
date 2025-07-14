@@ -4,9 +4,11 @@ import { Input } from '@/shared/components/ui/input';
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button';
 import { Search, FileText, Download, MessageCircle, Send, Plus, ArrowLeft, Loader2 } from 'lucide-react';
-import { useQuotationStore, usePatientStore, type Quotation, type Patient } from '@/shared/stores';
+import { useQuotationStore } from '@/shared/stores/quotationStore';
+import { usePatientStore, type Patient } from '@/shared/stores';
 import { EmptyQuotes } from '@/shared/components';
 import { toast } from 'sonner';
+import QuotePaymentsDetailModal from './QuotePaymentsDetailModal';
 
 interface QuoteListProps {
   onBack: () => void;
@@ -15,6 +17,11 @@ interface QuoteListProps {
 
 const QuoteList: React.FC<QuoteListProps> = ({ onBack, onCreateNew }) => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedQuote, setSelectedQuote] = useState<any | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [loadingDetail, setLoadingDetail] = useState(false);
+  const [quotationDetails, setQuotationDetails] = useState<{[key: number]: any}>({});
+  const [loadingDetails, setLoadingDetails] = useState<{[key: number]: boolean}>({});
 
   const { 
     quotations, 
@@ -22,7 +29,8 @@ const QuoteList: React.FC<QuoteListProps> = ({ onBack, onCreateNew }) => {
     error, 
     fetchQuotations, 
     setFilters, 
-    clearError 
+    clearError, 
+    getQuotationDetail 
   } = useQuotationStore();
 
   const { patients, fetchPatients } = usePatientStore();
@@ -32,6 +40,15 @@ const QuoteList: React.FC<QuoteListProps> = ({ onBack, onCreateNew }) => {
     fetchQuotations();
     fetchPatients();
   }, [fetchQuotations, fetchPatients]);
+
+  // Cargar detalles de pagos cuando se cargan las cotizaciones
+  useEffect(() => {
+    if (quotations.length > 0) {
+      quotations.forEach(quotation => {
+        loadQuotationDetails(quotation.quotation_id);
+      });
+    }
+  }, [quotations]);
 
   // Manejar errores
   useEffect(() => {
@@ -56,9 +73,9 @@ const QuoteList: React.FC<QuoteListProps> = ({ onBack, onCreateNew }) => {
     if (!searchQuery.trim()) return quotations;
     
     return quotations.filter(quotation => {
-      const patient = patients.find(p => p.patient_id === quotation.patient_id);
+      const patient = patients.find(p => p.patientId === quotation.patient_id);
       return patient && (
-        `${patient.first_name} ${patient.last_name}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        `${patient.firstName} ${patient.lastName}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
         patient.phone?.includes(searchQuery) ||
         quotation.quotation_id?.toString().includes(searchQuery)
       );
@@ -67,13 +84,13 @@ const QuoteList: React.FC<QuoteListProps> = ({ onBack, onCreateNew }) => {
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      draft: { label: 'Borrador', className: 'bg-gray-100 text-gray-700' },
-      sent: { label: 'Enviada', className: 'bg-blue-100 text-blue-700' },
-      accepted: { label: 'Aceptada', className: 'bg-green-100 text-green-700' },
-      rejected: { label: 'Rechazada', className: 'bg-red-100 text-red-700' }
+      PENDIENTE: { label: 'Pendiente', className: 'bg-gray-100 text-gray-700' },
+      ENVIADA: { label: 'Enviada', className: 'bg-blue-100 text-blue-700' },
+      ACEPTADA: { label: 'Aceptada', className: 'bg-green-100 text-green-700' },
+      RECHAZADA: { label: 'Rechazada', className: 'bg-red-100 text-red-700' }
     };
     
-    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.draft;
+    const config = statusConfig[status as keyof typeof statusConfig] || { label: status, className: 'bg-gray-100 text-gray-700' };
     return <Badge className={config.className}>{config.label}</Badge>;
   };
 
@@ -81,15 +98,54 @@ const QuoteList: React.FC<QuoteListProps> = ({ onBack, onCreateNew }) => {
     toast.info(`Exportando cotización ${quotationId} a PDF...`);
   };
 
-  const handleSendWhatsApp = (quotation: Quotation) => {
-    const patient = patients.find(p => p.patient_id === quotation.patient_id);
-    toast.info(`Enviando cotización ${quotation.quotation_id} por WhatsApp a ${patient ? `${patient.first_name} ${patient.last_name}` : 'paciente'}...`);
+  const handleSendWhatsApp = (quotation: any) => { // Changed type from Quotation to any
+    const patient = patients.find(p => p.patientId === quotation.patient_id);
+    toast.info(`Enviando cotización ${quotation.quotation_id} por WhatsApp a ${patient ? `${patient.firstName} ${patient.lastName}` : 'paciente'}...`);
   };
 
-  const handleSendEmail = (quotation: Quotation) => {
-    const patient = patients.find(p => p.patient_id === quotation.patient_id);
+  const handleSendEmail = (quotation: any) => { // Changed type from Quotation to any
+    const patient = patients.find(p => p.patientId === quotation.patient_id);
     toast.info(`Enviando cotización ${quotation.quotation_id} por email a ${patient?.email || 'paciente'}...`);
   };
+
+  const handleOpenDetail = async (quotationId: number) => {
+    setLoadingDetail(true);
+    try {
+      const data = await getQuotationDetail(quotationId);
+      setSelectedQuote(data);
+      setIsDetailModalOpen(true);
+    } catch (e) {
+      toast.error('No se pudo cargar el detalle de pagos');
+    } finally {
+      setLoadingDetail(false);
+    }
+  };
+
+  const loadQuotationDetails = async (quotationId: number) => {
+    if (quotationDetails[quotationId]) return; // Ya cargado
+    
+    setLoadingDetails(prev => ({ ...prev, [quotationId]: true }));
+    try {
+      const data = await getQuotationDetail(quotationId);
+      setQuotationDetails(prev => ({ ...prev, [quotationId]: data }));
+    } catch (e) {
+      console.error('Error loading quotation details:', e);
+    } finally {
+      setLoadingDetails(prev => ({ ...prev, [quotationId]: false }));
+    }
+  };
+
+  // Formateador de fecha visualmente agradable
+  function formatDate(dateString: string) {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric' });
+  }
+
+  // Helper para obtener items de una cotización (soporta Quote y QuoteWithItems)
+  function getQuoteItems(quotation: any) {
+    return Array.isArray(quotation.items) ? quotation.items : [];
+  }
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -129,23 +185,7 @@ const QuoteList: React.FC<QuoteListProps> = ({ onBack, onCreateNew }) => {
           />
         </div>
 
-        {/* Recent Patients */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Últimos Pacientes</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {recentPatients.map((patient) => (
-                <div key={patient.patient_id} className="p-3 border rounded-lg hover:shadow-md transition-shadow">
-                  <div className="font-medium">{patient.first_name} {patient.last_name}</div>
-                  <div className="text-sm text-gray-600">{patient.phone}</div>
-                  <div className="text-sm text-gray-600">{patient.email}</div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+  
 
         {/* Quotes List */}
         <div className="space-y-4">
@@ -176,7 +216,7 @@ const QuoteList: React.FC<QuoteListProps> = ({ onBack, onCreateNew }) => {
             <EmptyQuotes onCreateQuote={onCreateNew} />
           ) : (
                         filteredQuotations.map((quotation) => {
-              const patient = patients.find(p => p.patient_id === quotation.patient_id);
+              const patient = patients.find(p => p.patientId === quotation.patient_id);
               return (
                 <Card key={quotation.quotation_id} className="hover:shadow-md transition-shadow">
                   <CardContent className="p-6">
@@ -184,12 +224,36 @@ const QuoteList: React.FC<QuoteListProps> = ({ onBack, onCreateNew }) => {
                       <div>
                         <div className="flex items-center gap-3 mb-2">
                           <h3 className="font-semibold text-lg">Cotización #{quotation.quotation_id}</h3>
-                          {getStatusBadge(quotation.status || 'draft')}
+                          {getStatusBadge(quotation.status)}
                         </div>
                         <div className="text-gray-600">
-                          <p><strong>Paciente:</strong> {patient ? `${patient.first_name} ${patient.last_name}` : 'N/A'}</p>
+                          <p><strong>Paciente:</strong> {patient ? `${patient.firstName} ${patient.lastName}` : 'N/A'}</p>
                           <p><strong>Teléfono:</strong> {patient?.phone || 'N/A'}</p>
-                          <p><strong>Fecha:</strong> {new Date(quotation.created_at).toLocaleDateString()}</p>
+                          <p><strong>Fecha:</strong> {formatDate(quotation.created_at)}</p>
+                        </div>
+                        {/* Resumen de pagos y saldo en horizontal */}
+                        <div className="mt-2 flex flex-row gap-6 text-sm text-gray-700">
+                          <span><strong>Total:</strong> S/ {quotation.total_amount?.toFixed(2) ?? '0.00'}</span>
+                          <span><strong>Pagado:</strong> S/ {quotationDetails[quotation.quotation_id]?.total_paid?.toFixed(2) ?? '0.00'}</span>
+                          <span><strong>Pendiente:</strong> S/ {quotationDetails[quotation.quotation_id]?.balance_remaining?.toFixed(2) ?? quotation.total_amount?.toFixed(2) ?? '0.00'}</span>
+                        </div>
+                        <div className="flex gap-2 mt-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={loadingDetails[quotation.quotation_id]}
+                            onClick={() => loadQuotationDetails(quotation.quotation_id)}
+                          >
+                            {loadingDetails[quotation.quotation_id] ? 'Cargando...' : 'Actualizar pagos'}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={loadingDetail}
+                            onClick={() => handleOpenDetail(quotation.quotation_id)}
+                          >
+                            {loadingDetail && selectedQuote?.quotation_id === quotation.quotation_id ? 'Cargando...' : 'Ver detalle de pagos'}
+                          </Button>
                         </div>
                       </div>
                       <div className="text-right">
@@ -204,11 +268,11 @@ const QuoteList: React.FC<QuoteListProps> = ({ onBack, onCreateNew }) => {
 
                     <div className="border-t pt-4">
                       <div className="flex flex-wrap gap-2 mb-4">
-                        {quotation.items?.map((item) => (
-                          <Badge key={item.quotation_id} variant="outline" className="text-xs">
-                            Servicio x{item.quantity}
+                        {getQuoteItems(quotation).map((item: any) => (
+                          <Badge key={item.item_id || item.quotation_item_id || item.service_id} variant="outline" className="text-xs">
+                            {(item.service_name || item.serviceName || 'Servicio')} x{item.quantity}
                           </Badge>
-                        )) || []}
+                        ))}
                       </div>
                   
                   <div className="flex gap-2">
@@ -248,6 +312,14 @@ const QuoteList: React.FC<QuoteListProps> = ({ onBack, onCreateNew }) => {
           )}
         </div>
       </div>
+      {/* Modal de detalle de pagos */}
+      {selectedQuote && (
+        <QuotePaymentsDetailModal
+          open={isDetailModalOpen}
+          onClose={() => setIsDetailModalOpen(false)}
+          quotation={selectedQuote}
+        />
+      )}
     </div>
   );
 };
