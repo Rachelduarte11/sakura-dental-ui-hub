@@ -1,18 +1,23 @@
 import { create } from 'zustand';
-import { patientsApi, quotationsApi, servicesApi, type Patient, type Quotation, type Service } from '../utils/api-client';
+import { useMemo } from 'react';
+import { patientsApi, quotationsApi, servicesApi, paymentsApi, type Patient, type Service, type Payment } from '../utils/api-client';
+import type { Quotation } from '../utils/api-client';
 
-export type { Patient, Quotation, Service };
+export type { Patient, Quotation, Service, Payment };
 
 interface PatientState {
   patients: Patient[];
   selectedPatient: Patient | null;
   patientQuotations: Quotation[];
+  patientPayments: Payment[];
   services: Service[];
   isLoading: boolean;
   isLoadingQuotations: boolean;
+  isLoadingPayments: boolean;
   isLoadingServices: boolean;
   error: string | null;
   quotationsError: string | null;
+  paymentsError: string | null;
   servicesError: string | null;
   filters: {
     search: string;
@@ -26,6 +31,7 @@ interface PatientActions {
   fetchPatientById: (id: number) => Promise<void>;
   searchPatients: (searchTerm: string) => Promise<void>;
   fetchPatientQuotations: (patientId: number) => Promise<void>;
+  fetchPatientPayments: (patientId: number) => Promise<void>;
   fetchServices: () => Promise<void>;
   
   // CRUD actions
@@ -38,6 +44,7 @@ interface PatientActions {
   setFilters: (filters: Partial<PatientState['filters']>) => void;
   clearError: () => void;
   clearQuotationsError: () => void;
+  clearPaymentsError: () => void;
   clearServicesError: () => void;
   setLoading: (loading: boolean) => void;
 }
@@ -47,12 +54,15 @@ export const usePatientStore = create<PatientState & PatientActions>((set, get) 
   patients: [],
   selectedPatient: null,
   patientQuotations: [],
+  patientPayments: [],
   services: [],
   isLoading: false,
   isLoadingQuotations: false,
+  isLoadingPayments: false,
   isLoadingServices: false,
   error: null,
   quotationsError: null,
+  paymentsError: null,
   servicesError: null,
   filters: {
     search: '',
@@ -108,6 +118,19 @@ export const usePatientStore = create<PatientState & PatientActions>((set, get) 
       set({
         quotationsError: error instanceof Error ? error.message : 'Error al cargar cotizaciones',
         isLoadingQuotations: false,
+      });
+    }
+  },
+
+  fetchPatientPayments: async (patientId: number) => {
+    set({ isLoadingPayments: true, paymentsError: null });
+    try {
+      const response = await paymentsApi.getByPatientId(patientId);
+      set({ patientPayments: Array.isArray(response.data) ? response.data : [], isLoadingPayments: false });
+    } catch (error) {
+      set({
+        paymentsError: error instanceof Error ? error.message : 'Error al cargar pagos',
+        isLoadingPayments: false,
       });
     }
   },
@@ -195,6 +218,10 @@ export const usePatientStore = create<PatientState & PatientActions>((set, get) 
     set({ quotationsError: null });
   },
 
+  clearPaymentsError: () => {
+    set({ paymentsError: null });
+  },
+
   clearServicesError: () => {
     set({ servicesError: null });
   },
@@ -203,3 +230,25 @@ export const usePatientStore = create<PatientState & PatientActions>((set, get) 
     set({ isLoading: loading });
   },
 }));
+
+// Selector: Get quotations with their payments and totals
+export const usePatientQuotationsWithPayments = () => {
+  const patientQuotations = usePatientStore((state) => state.patientQuotations);
+  const patientPayments = usePatientStore((state) => state.patientPayments);
+  
+  return useMemo(() => {
+    return patientQuotations.map((quotation) => {
+      const payments = patientPayments.filter(
+        (p) => p.quotationId === quotation.quotationId
+      );
+      const totalPaid = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
+      const pending = (quotation.totalAmount || 0) - totalPaid;
+      return {
+        ...quotation,
+        payments,
+        totalPaid,
+        pending,
+      };
+    });
+  }, [patientQuotations, patientPayments]);
+};

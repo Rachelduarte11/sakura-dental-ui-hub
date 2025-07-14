@@ -30,7 +30,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/shared/components/ui/select";
-import { usePaymentStore, useQuotationStore, usePatientStore, type Payment, type Quotation, type Patient } from '@/shared/stores';
+import { usePaymentStore, useQuotationStore, usePatientStore, type Patient } from '@/shared/stores';
+import type { Payment } from '@/shared/stores/paymentStore';
+import type { Quotation } from '@/shared/stores/quotationStore';
 import { toast } from 'sonner';
 
 const PaymentManagement: React.FC = () => {
@@ -61,7 +63,9 @@ const PaymentManagement: React.FC = () => {
 
   const { 
     patients, 
-    fetchPatients 
+    patientPayments,
+    fetchPatients,
+    fetchPatientPayments
   } = usePatientStore();
 
   // Cargar datos al montar el componente
@@ -70,6 +74,13 @@ const PaymentManagement: React.FC = () => {
     fetchQuotations();
     fetchPatients();
   }, [fetchPayments, fetchQuotations, fetchPatients]);
+
+  // Cargar pagos del paciente cuando se selecciona una cotización
+  useEffect(() => {
+    if (selectedQuotation) {
+      fetchPatientPayments(selectedQuotation.patient_id);
+    }
+  }, [selectedQuotation, fetchPatientPayments]);
 
   // Manejar errores
   useEffect(() => {
@@ -106,6 +117,15 @@ const PaymentManagement: React.FC = () => {
     }
   };
 
+  const calculateQuotationTotals = (quotation: Quotation) => {
+    const total = Number(quotation.total_amount) || 0;
+    const paid = payments
+      .filter(p => p.quotation_id === quotation.quotation_id)
+      .reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+    const pending = total - paid;
+    
+    return { total, paid, pending };
+  };
   const fetchQuotationDetail = async (quotationId: number) => {
     setLoadingDetails(prev => ({ ...prev, [quotationId]: true }));
     try {
@@ -165,7 +185,7 @@ const PaymentManagement: React.FC = () => {
   };
 
   const handleSendReceipt = (quotation: Quotation) => {
-    const patient = patients.find(p => p.patient_id === quotation.patient_id);
+    const patient = patients.find(p => p.patientId === quotation.patient_id);
     if (patient?.phone) {
       toast.success(`Enviando comprobante por WhatsApp a ${patient.phone}`);
     } else {
@@ -174,8 +194,8 @@ const PaymentManagement: React.FC = () => {
   };
 
   const handleDownloadReceipt = (quotation: Quotation) => {
-    const patient = patients.find(p => p.patient_id === quotation.patient_id);
-    const patientName = patient ? `${patient.first_name} ${patient.last_name}` : 'Paciente';
+    const patient = patients.find(p => p.patientId === quotation.patient_id);
+    const patientName = patient ? `${patient.firstName} ${patient.lastName}` : 'Paciente';
     toast.success(`Descargando comprobante de ${patientName}`);
   };
 
@@ -269,6 +289,8 @@ const PaymentManagement: React.FC = () => {
         {/* Quotations List */}
         <div className="space-y-4">
           {quotations.map((quotation) => {
+            const { total, paid, pending } = calculateQuotationTotals(quotation);
+            const patient = patients.find(p => p.patientId === quotation.patient_id);
             const details = quotationDetails[quotation.quotation_id];
             const total = details?.total_amount ?? 0;
             const paid = details?.total_paid ?? 0;
@@ -281,7 +303,7 @@ const PaymentManagement: React.FC = () => {
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="flex-1">
                                               <div className="flex items-center gap-3 mb-2">
-                          <h3 className="font-semibold text-gray-800">{patient ? `${patient.first_name} ${patient.last_name}` : 'Paciente'}</h3>
+                          <h3 className="font-semibold text-gray-800">{patient ? `${patient.firstName} ${patient.lastName}` : 'Paciente'}</h3>
                           {getStatusBadge(quotation.status)}
                         </div>
                       
@@ -320,9 +342,33 @@ const PaymentManagement: React.FC = () => {
                             
                             <div className="space-y-4">
                               <div className="p-3 bg-gray-50 rounded-lg">
-                                <p className="font-medium">{patient ? `${patient.first_name} ${patient.last_name}` : 'Paciente'}</p>
+                                <p className="font-medium">{patient ? `${patient.firstName} ${patient.lastName}` : 'Paciente'}</p>
                                 <p className="text-sm text-gray-600">Pendiente: S/ {pending.toFixed(2)}</p>
                               </div>
+
+                              {/* Historial de Pagos */}
+                              {patientPayments.length > 0 && (
+                                <div className="space-y-2">
+                                  <Label>Historial de Pagos</Label>
+                                  <div className="max-h-32 overflow-y-auto space-y-2">
+                                    {patientPayments
+                                      .filter(p => p.quotationId === selectedQuotation.quotation_id)
+                                      .map((payment) => (
+                                        <div key={payment.paymentId} className="flex justify-between items-center p-2 bg-gray-50 rounded text-sm">
+                                          <div>
+                                            <span className="font-medium">S/ {payment.amount.toFixed(2)}</span>
+                                            <span className="text-gray-500 ml-2">
+                                              {new Date(payment.paymentDate || '').toLocaleDateString()}
+                                            </span>
+                                          </div>
+                                          <Badge className="text-xs">
+                                            {payment.status}
+                                          </Badge>
+                                        </div>
+                                      ))}
+                                  </div>
+                                </div>
+                              )}
 
                               <div className="space-y-2">
                                 <Label htmlFor="amount">Monto Recibido</Label>
