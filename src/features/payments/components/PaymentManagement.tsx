@@ -39,6 +39,8 @@ const PaymentManagement: React.FC = () => {
   const [paymentMethod, setPaymentMethod] = useState('');
   const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split('T')[0]);
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
+  const [quotationDetails, setQuotationDetails] = useState<{ [id: number]: any }>({});
+  const [loadingDetails, setLoadingDetails] = useState<{ [id: number]: boolean }>({});
 
   const { 
     payments, 
@@ -104,15 +106,26 @@ const PaymentManagement: React.FC = () => {
     }
   };
 
-  const calculateQuotationTotals = (quotation: Quotation) => {
-    const total = quotation.total_amount || 0;
-    const paid = payments
-      .filter(p => p.quotation_id === quotation.quotation_id)
-      .reduce((sum, p) => sum + (p.amount || 0), 0);
-    const pending = total - paid;
-    
-    return { total, paid, pending };
+  const fetchQuotationDetail = async (quotationId: number) => {
+    setLoadingDetails(prev => ({ ...prev, [quotationId]: true }));
+    try {
+      const res = await fetch(`http://localhost:8080/api/quotations/${quotationId}`);
+      if (!res.ok) throw new Error('No se pudo obtener el detalle');
+      const data = await res.json();
+      setQuotationDetails(prev => ({ ...prev, [quotationId]: data }));
+    } catch (e) {
+      toast.error('Error al cargar detalle de cotización');
+    } finally {
+      setLoadingDetails(prev => ({ ...prev, [quotationId]: false }));
+    }
   };
+
+  useEffect(() => {
+    if (quotations.length > 0) {
+      quotations.forEach(q => fetchQuotationDetail(q.quotation_id));
+    }
+    // eslint-disable-next-line
+  }, [quotations]);
 
   const handleRegisterPayment = async () => {
     if (!selectedQuotation || !paymentAmount || !paymentMethod) {
@@ -121,7 +134,8 @@ const PaymentManagement: React.FC = () => {
     }
 
     const amount = parseFloat(paymentAmount);
-    const { pending } = calculateQuotationTotals(selectedQuotation);
+    const details = quotationDetails[selectedQuotation.quotation_id];
+    const pending = details?.balance_remaining ?? details?.total_amount ?? 0;
     
     if (amount <= 0 || amount > pending) {
       toast.error('Monto inválido');
@@ -178,19 +192,22 @@ const PaymentManagement: React.FC = () => {
     );
   }
 
-  // Calcular totales
+  // Calcular totales globales usando los detalles de la API
   const totalPending = quotations.reduce((sum, q) => {
-    const { pending } = calculateQuotationTotals(q);
+    const details = quotationDetails[q.quotation_id];
+    const pending = details?.balance_remaining ?? details?.total_amount ?? 0;
     return sum + pending;
   }, 0);
 
   const totalPaid = quotations.reduce((sum, q) => {
-    const { paid } = calculateQuotationTotals(q);
+    const details = quotationDetails[q.quotation_id];
+    const paid = details?.total_paid ?? 0;
     return sum + paid;
   }, 0);
 
   const activeQuotations = quotations.filter(q => {
-    const { pending } = calculateQuotationTotals(q);
+    const details = quotationDetails[q.quotation_id];
+    const pending = details?.balance_remaining ?? details?.total_amount ?? 0;
     return pending > 0;
   });
 
@@ -252,7 +269,10 @@ const PaymentManagement: React.FC = () => {
         {/* Quotations List */}
         <div className="space-y-4">
           {quotations.map((quotation) => {
-            const { total, paid, pending } = calculateQuotationTotals(quotation);
+            const details = quotationDetails[quotation.quotation_id];
+            const total = details?.total_amount ?? 0;
+            const paid = details?.total_paid ?? 0;
+            const pending = details?.balance_remaining ?? total;
             const patient = patients.find(p => p.patient_id === quotation.patient_id);
             
             return (

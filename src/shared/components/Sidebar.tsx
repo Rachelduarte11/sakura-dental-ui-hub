@@ -36,11 +36,15 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ currentScreen = 'home' }) => {
   const router = useRouter();
   const [expandedQuotes, setExpandedQuotes] = useState(false);
+  const [expandedPayments, setExpandedPayments] = useState(currentScreen === 'payments' || currentScreen === 'payments-history');
 
   // Expandir cotizaciones si estamos en una vista de cotizaciones
   React.useEffect(() => {
     if (currentScreen === 'quotes' || currentScreen === 'quotes-create') {
       setExpandedQuotes(true);
+    }
+    if (currentScreen === 'payments' || currentScreen === 'payments-history') {
+      setExpandedPayments(true);
     }
   }, [currentScreen]);
 
@@ -48,7 +52,6 @@ const Sidebar: React.FC<SidebarProps> = ({ currentScreen = 'home' }) => {
     { id: 'home', icon: Home, label: 'Home', route: '/home' },
     { id: 'agenda', icon: Calendar, label: 'Agenda', route: '/agenda' },
     { id: 'sales', icon: ShoppingCart, label: 'POS', route: '/sales' },
-    { id: 'payments', icon: DollarSign, label: 'Pagos', route: '/payments' },
     { id: 'finances', icon: Calculator, label: 'Finanzas', route: '/finances' },
     { id: 'patients', icon: Users, label: 'Pacientes', route: '/patients' },
     { id: 'doctors', icon: UserCheck, label: 'Doctores', route: '/doctors' },
@@ -122,25 +125,53 @@ const Sidebar: React.FC<SidebarProps> = ({ currentScreen = 'home' }) => {
         })}
 
         {/* Elementos de pagos */}
-        {navigationItems.slice(2, 5).map((item) => {
-          const Icon = item.icon;
-          const isActive = currentScreen === item.id;
-          
-          return (
-            <button
-              key={item.id}
-              onClick={() => handleNavigation(item.route)}
-              className={`w-full flex items-center space-x-3 px-3 py-3 rounded-lg text-left transition-all duration-200 ${
-                isActive 
-                  ? 'bg-sakura-red text-white shadow-simple-shadow' 
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-              }`}
-            >
-              <Icon className="h-5 w-5" />
-              <span className="font-medium text-sm">{item.label}</span>
-            </button>
-          );
-        })}
+        {/* Submenú de Pagos */}
+        <div className="space-y-1">
+          <button
+            onClick={() => setExpandedPayments(!expandedPayments)}
+            className={`w-full flex items-center justify-between px-3 py-3 rounded-lg text-left transition-all duration-200 ${
+              currentScreen === 'payments' || currentScreen === 'payments-history'
+                ? 'bg-sakura-red text-white shadow-simple-shadow'
+                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+            }`}
+          >
+            <div className="flex items-center space-x-3">
+              <DollarSign className="h-5 w-5" />
+              <span className="font-medium text-sm">Pagos</span>
+            </div>
+            {expandedPayments ? (
+              <ChevronDown className="h-4 w-4" />
+            ) : (
+              <ChevronRight className="h-4 w-4" />
+            )}
+          </button>
+          {expandedPayments && (
+            <div className="ml-6 space-y-1">
+              <button
+                onClick={() => handleNavigation('/payments')}
+                className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-all duration-200 text-sm ${
+                  currentScreen === 'payments'
+                    ? 'bg-sakura-red/10 text-sakura-red'
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                }`}
+              >
+                <List className="h-4 w-4" />
+                <span>Gestión de Pagos</span>
+              </button>
+              <button
+                onClick={() => handleNavigation('/payments/history')}
+                className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-all duration-200 text-sm ${
+                  currentScreen === 'payments-history'
+                    ? 'bg-sakura-red/10 text-sakura-red'
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                }`}
+              >
+                <FileText className="h-4 w-4" />
+                <span>Historial de Pagos</span>
+              </button>
+            </div>
+          )}
+        </div>
 
         {/* Cotizaciones con subopciones */}
         <div className="space-y-1">

@@ -87,6 +87,7 @@ const QuoteList: React.FC<QuoteListProps> = ({ onBack, onCreateNew }) => {
       PENDIENTE: { label: 'Pendiente', className: 'bg-gray-100 text-gray-700' },
       ENVIADA: { label: 'Enviada', className: 'bg-blue-100 text-blue-700' },
       ACEPTADA: { label: 'Aceptada', className: 'bg-green-100 text-green-700' },
+      PAGADA: { label: 'Pagada', className: 'bg-green-100 text-green-700' },
       RECHAZADA: { label: 'Rechazada', className: 'bg-red-100 text-red-700' }
     };
     
