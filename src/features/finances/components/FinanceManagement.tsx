@@ -1,10 +1,10 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/shared/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Badge } from '@/shared/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select';
-import { TrendingUp, TrendingDown, DollarSign, FileText, Download, Calendar, Users, AlertTriangle } from 'lucide-react';
+import { TrendingUp, TrendingDown, DollarSign, FileText, Download, Calendar, Users, AlertTriangle, Loader2 } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -13,6 +13,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/shared/components/ui/table';
+import { usePaymentStore, useQuotationStore, useEmployeeStore, usePatientStore, type Payment, type Quotation, type Employee, type Patient } from '@/shared/stores';
+import { toast } from 'sonner';
 
 interface Transaction {
   id: number;
@@ -33,50 +35,87 @@ const FinanceManagement: React.FC = () => {
   const [selectedDoctor, setSelectedDoctor] = useState('all');
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('all');
 
-  // Mock data
-  const transactions: Transaction[] = [
-    {
-      id: 1,
-      date: '2024-01-15',
-      patientName: 'Maria Antonieta Lugo',
-      doctorName: 'Dr. Carlos Mendoza',
-      service: 'Limpieza Dental',
-      amount: 150.00,
-      currency: 'Soles',
-      paymentMethod: 'Efectivo',
-      doctorPercentage: 60,
-      clinicAmount: 60.00,
-      doctorAmount: 90.00,
-    },
-    {
-      id: 2,
-      date: '2024-01-14',
-      patientName: 'Carlos Mariano Justo',
-      doctorName: 'Dra. Ana Rodriguez',
-      service: 'Ortodoncia',
-      amount: 850.00,
-      currency: 'Soles',
-      paymentMethod: 'Yape',
-      doctorPercentage: 70,
-      clinicAmount: 255.00,
-      doctorAmount: 595.00,
-    },
-    {
-      id: 3,
-      date: '2024-01-13',
-      patientName: 'Luis Fernando Castro',
-      doctorName: 'Dr. Carlos Mendoza',
-      service: 'Extracción',
-      amount: 200.00,
-      currency: 'Soles',
-      paymentMethod: 'Tarjeta',
-      doctorPercentage: 60,
-      clinicAmount: 80.00,
-      doctorAmount: 120.00,
-    },
-  ];
+  const { 
+    payments, 
+    isLoading: paymentsLoading, 
+    error: paymentsError, 
+    fetchPayments, 
+    clearError: clearPaymentsError 
+  } = usePaymentStore();
 
-  const doctors = ['Dr. Carlos Mendoza', 'Dra. Ana Rodriguez', 'Dr. Miguel Torres'];
+  const { 
+    quotations, 
+    isLoading: quotationsLoading, 
+    error: quotationsError, 
+    fetchQuotations, 
+    clearError: clearQuotationsError 
+  } = useQuotationStore();
+
+  const { 
+    employees, 
+    isLoading: employeesLoading, 
+    error: employeesError, 
+    fetchEmployees, 
+    clearError: clearEmployeesError 
+  } = useEmployeeStore();
+
+  const { 
+    patients, 
+    isLoading: patientsLoading, 
+    error: patientsError, 
+    fetchPatients, 
+    clearError: clearPatientsError 
+  } = usePatientStore();
+
+  // Cargar datos al montar el componente
+  useEffect(() => {
+    fetchPayments();
+    fetchQuotations();
+    fetchEmployees();
+    fetchPatients();
+  }, [fetchPayments, fetchQuotations, fetchEmployees, fetchPatients]);
+
+  // Manejar errores
+  useEffect(() => {
+    if (paymentsError) {
+      toast.error(paymentsError);
+      clearPaymentsError();
+    }
+    if (quotationsError) {
+      toast.error(quotationsError);
+      clearQuotationsError();
+    }
+    if (employeesError) {
+      toast.error(employeesError);
+      clearEmployeesError();
+    }
+    if (patientsError) {
+      toast.error(patientsError);
+      clearPatientsError();
+    }
+  }, [paymentsError, quotationsError, employeesError, patientsError, clearPaymentsError, clearQuotationsError, clearEmployeesError, clearPatientsError]);
+
+  // Crear transacciones combinando pagos y cotizaciones
+  const transactions = payments.map(payment => {
+    const quotation = quotations.find(q => q.quotation_id === payment.quotation_id);
+    const patient = patients.find(p => p.patient_id === (quotation?.patient_id || 0));
+    
+    return {
+      id: payment.payment_id,
+      date: payment.payment_date,
+      patientName: patient ? `${patient.first_name} ${patient.last_name}` : 'Paciente',
+      doctorName: 'Doctor Asignado', // Mock data
+      service: 'Servicio Dental',
+      amount: payment.amount,
+      currency: 'Soles',
+      paymentMethod: 'Efectivo', // Mock data
+      doctorPercentage: 60, // Mock data
+      clinicAmount: payment.amount * 0.4, // Mock calculation
+      doctorAmount: payment.amount * 0.6, // Mock calculation
+    };
+  });
+
+  const doctors = employees.map(emp => `${emp.first_name} ${emp.last_name}`);
   const paymentMethods = ['Efectivo', 'Yape', 'Plin', 'Tarjeta', 'Transferencia'];
 
   const filteredTransactions = transactions.filter(t => {
@@ -84,6 +123,8 @@ const FinanceManagement: React.FC = () => {
     const paymentMatch = selectedPaymentMethod === 'all' || t.paymentMethod === selectedPaymentMethod;
     return doctorMatch && paymentMatch;
   });
+
+  const isLoading = paymentsLoading || quotationsLoading || employeesLoading || patientsLoading;
 
   const totalIncome = filteredTransactions.reduce((sum, t) => sum + t.amount, 0);
   const totalClinicAmount = filteredTransactions.reduce((sum, t) => sum + t.clinicAmount, 0);
@@ -133,8 +174,15 @@ const FinanceManagement: React.FC = () => {
       </div>
 
       <div className="p-4 space-y-6">
-        {/* Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {isLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-8 w-8 animate-spin text-sakura-red" />
+            <span className="ml-2 text-sakura-gray">Cargando reportes financieros...</span>
+          </div>
+        ) : (
+          <>
+            {/* Filters */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
             <SelectTrigger>
               <SelectValue placeholder="Seleccionar período" />
@@ -420,6 +468,8 @@ const FinanceManagement: React.FC = () => {
             </div>
           </CardContent>
         </Card>
+          </>
+        )}
       </div>
     </div>
   );

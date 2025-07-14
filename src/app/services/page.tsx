@@ -1,6 +1,6 @@
 'use client'
 
-import ServiceManagement from '../../features/services/components/ServiceManagement';
+import ServiceManagement from '../../features/services/view/ServiceManagement';
 import AppLayout from '../../shared/components/AppLayout';
 import { useRouter } from 'next/navigation';
 

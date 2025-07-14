@@ -21,7 +21,7 @@ src/
 │   ├── inventory/          # Inventory management
 │   ├── finances/           # Finance management
 │   ├── payments/           # Payment management
-│   ├── patient-account/    # Patient account
+
 │   └── not-found.tsx       # 404 page
 │
 ├── features/               # Domain-specific modules

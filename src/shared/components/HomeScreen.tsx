@@ -1,10 +1,12 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 import { Card, CardContent } from '@/shared/components/ui/card';
 import { Badge } from '@/shared/components/ui/badge';
-import { Search, Plus, Settings, Users, Package, Calculator, UserCheck, DollarSign, AlertTriangle, FileText, TrendingUp } from 'lucide-react';
+import { Search, Plus, Settings, Users, Package, Calculator, UserCheck, DollarSign, AlertTriangle, FileText, TrendingUp, Loader2 } from 'lucide-react';
+import { usePaymentStore, useQuotationStore, usePatientStore, useServiceStore } from '@/shared/stores';
+import { toast } from 'sonner';
 
 interface HomeScreenProps {
   onNavigateToPatients: () => void;
@@ -14,30 +16,128 @@ interface HomeScreenProps {
 const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToPatients, onNavigateToServices }) => {
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Mock data for payments, quotes, and dashboard metrics
-  const recentPayments = [
-    { id: 1, name: "Maria Antonieta Lugo", amount: 850.00, currency: "Soles", type: "payment" },
-    { id: 2, name: "Carlos Mariano Justo", amount: 850.00, currency: "Soles", type: "payment", hasDebt: true },
-    { id: 3, name: "Maria Antonieta Lugo", amount: 850.00, currency: "Soles", type: "payment" },
-  ];
+  const { 
+    payments, 
+    isLoading: paymentsLoading, 
+    error: paymentsError, 
+    fetchPayments, 
+    clearError: clearPaymentsError 
+  } = usePaymentStore();
 
-  const recentQuotes = [
-    { id: 1, name: "Maria Antonieta Lugo", amount: 850.00, currency: "Soles", type: "quote" },
-    { id: 2, name: "Carlos Mariano Justo", amount: 850.00, currency: "Soles", type: "quote", hasDebt: true },
-    { id: 3, name: "Maria Antonieta Lugo", amount: 850.00, currency: "Soles", type: "quote" },
-  ];
+  const { 
+    quotations, 
+    isLoading: quotationsLoading, 
+    error: quotationsError, 
+    fetchQuotations, 
+    clearError: clearQuotationsError 
+  } = useQuotationStore();
 
-  // Dashboard metrics
-  const dashboardMetrics = {
-    todayIncome: 1250.00,
-    totalDebt: 3450.00,
-    pendingPatientsCount: 8,
-    topTreatments: [
-      { name: 'Ortodoncia', count: 12, amount: 6000 },
-      { name: 'Blanqueamiento', count: 8, amount: 1600 },
-      { name: 'Limpieza Dental', count: 15, amount: 1200 },
-    ]
-  };
+  const { 
+    patients, 
+    isLoading: patientsLoading, 
+    error: patientsError, 
+    fetchPatients, 
+    clearError: clearPatientsError 
+  } = usePatientStore();
+
+  const { 
+    services, 
+    isLoading: servicesLoading, 
+    error: servicesError, 
+    fetchServices, 
+    clearError: clearServicesError 
+  } = useServiceStore();
+
+  // Cargar datos al montar el componente
+  useEffect(() => {
+    fetchPayments();
+    fetchQuotations();
+    fetchPatients();
+    fetchServices();
+  }, [fetchPayments, fetchQuotations, fetchPatients, fetchServices]);
+
+  // Manejar errores
+  useEffect(() => {
+    if (paymentsError) {
+      toast.error(paymentsError);
+      clearPaymentsError();
+    }
+    if (quotationsError) {
+      toast.error(quotationsError);
+      clearQuotationsError();
+    }
+    if (patientsError) {
+      toast.error(patientsError);
+      clearPatientsError();
+    }
+    if (servicesError) {
+      toast.error(servicesError);
+      clearServicesError();
+    }
+  }, [paymentsError, quotationsError, patientsError, servicesError, clearPaymentsError, clearQuotationsError, clearPatientsError, clearServicesError]);
+
+  // Calcular métricas del dashboard
+  const todayIncome = payments
+    .filter(payment => {
+      const today = new Date().toDateString();
+      return new Date(payment.payment_date).toDateString() === today;
+    })
+    .reduce((sum, payment) => sum + payment.amount, 0);
+
+  const totalDebt = quotations
+    .filter(quotation => quotation.status === 'PENDIENTE')
+    .reduce((sum, quotation) => sum + quotation.total_amount, 0);
+
+  const pendingPatientsCount = quotations
+    .filter(quotation => quotation.status === 'PENDIENTE')
+    .length;
+
+  // Top tratamientos basados en cotizaciones
+  const topTreatments = services
+    .map(service => {
+      const serviceQuotations = quotations.filter(q => 
+        q.items?.some(item => item.service_id === service.service_id)
+      );
+      return {
+        name: service.name,
+        count: serviceQuotations.length,
+        amount: serviceQuotations.reduce((sum, q) => sum + q.total_amount, 0)
+      };
+    })
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 3);
+
+  // Datos recientes
+  const recentPayments = payments
+    .slice(0, 3)
+    .map(payment => {
+      const quotation = quotations.find(q => q.quotation_id === payment.quotation_id);
+      const patient = patients.find(p => p.patient_id === (quotation?.patient_id || 0));
+      return {
+        id: payment.payment_id,
+        name: patient ? `${patient.first_name} ${patient.last_name}` : 'Paciente',
+        amount: payment.amount,
+        currency: "Soles",
+        type: "payment",
+        hasDebt: false
+      };
+    });
+
+  const recentQuotes = quotations
+    .slice(0, 3)
+    .map(quotation => {
+      const patient = patients.find(p => p.patient_id === quotation.patient_id);
+      return {
+        id: quotation.quotation_id,
+        name: patient ? `${patient.first_name} ${patient.last_name}` : 'Paciente',
+        amount: quotation.total_amount,
+        currency: "Soles",
+        type: "quote",
+        hasDebt: quotation.status === 'PENDIENTE'
+      };
+    });
+
+  const isLoading = paymentsLoading || quotationsLoading || patientsLoading || servicesLoading;
 
   const TransactionCard = ({ item }: { item: typeof recentPayments[0] }) => (
     <Card className="mb-3 shadow-sm border-gray-200 hover:shadow-md transition-shadow">
@@ -57,7 +157,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToPatients, onNavigat
                   variant="secondary" 
                   className="bg-red-100 text-red-700 hover:bg-red-100 text-xs px-2 py-1"
                 >
-                  Dolares
+                  Pendiente
                 </Badge>
               )}
             </div>
@@ -69,6 +169,17 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToPatients, onNavigat
       </CardContent>
     </Card>
   );
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="flex items-center gap-2">
+          <Loader2 className="h-6 w-6 animate-spin" />
+          <span>Cargando dashboard...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white">
@@ -90,7 +201,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToPatients, onNavigat
                 <div>
                   <p className="text-sm font-medium text-gray-600">Total Cobrado Hoy</p>
                   <p className="text-2xl font-bold text-green-600">
-                    S/ {dashboardMetrics.todayIncome.toFixed(2)}
+                    S/ {todayIncome.toFixed(2)}
                   </p>
                   <p className="text-xs text-gray-500 flex items-center mt-1">
                     <TrendingUp className="h-3 w-3 mr-1" />
@@ -108,10 +219,10 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToPatients, onNavigat
                 <div>
                   <p className="text-sm font-medium text-gray-600">Monto en Deuda</p>
                   <p className="text-2xl font-bold text-red-600">
-                    S/ {dashboardMetrics.totalDebt.toFixed(2)}
+                    S/ {totalDebt.toFixed(2)}
                   </p>
                   <p className="text-xs text-gray-500">
-                    {dashboardMetrics.pendingPatientsCount} pacientes
+                    {pendingPatientsCount} pacientes
                   </p>
                 </div>
                 <AlertTriangle className="h-8 w-8 text-red-600" />
@@ -125,7 +236,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToPatients, onNavigat
                 <div>
                   <p className="text-sm font-medium text-gray-600">Pacientes Pendientes</p>
                   <p className="text-2xl font-bold text-sakura-red">
-                    {dashboardMetrics.pendingPatientsCount}
+                    {pendingPatientsCount}
                   </p>
                   <p className="text-xs text-gray-500">
                     Con pago pendiente
@@ -142,10 +253,10 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToPatients, onNavigat
                 <div>
                   <p className="text-sm font-medium text-gray-600">Top Tratamiento</p>
                   <p className="text-lg font-bold text-sakura-red">
-                    {dashboardMetrics.topTreatments[0].name}
+                    {topTreatments[0]?.name || 'Sin datos'}
                   </p>
                   <p className="text-xs text-gray-500">
-                    {dashboardMetrics.topTreatments[0].count} cotizaciones
+                    {topTreatments[0]?.count || 0} cotizaciones
                   </p>
                 </div>
                 <FileText className="h-8 w-8 text-sakura-red" />
@@ -159,7 +270,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToPatients, onNavigat
           <CardContent className="p-4">
             <h3 className="font-semibold text-gray-800 mb-3">Top 3 Tratamientos Cotizados</h3>
             <div className="grid grid-cols-3 gap-4">
-              {dashboardMetrics.topTreatments.map((treatment, index) => (
+              {topTreatments.map((treatment, index) => (
                 <div key={treatment.name} className="p-3 rounded-lg bg-gradient-to-r from-sakura-red/10 to-sakura-red/5 border border-sakura-red/20">
                   <div className="flex items-center justify-between mb-2">
                     <Badge className="bg-sakura-red text-white text-xs">#{index + 1}</Badge>
@@ -198,104 +309,68 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToPatients, onNavigat
           </Button>
         </div>
 
-        {/* Mobile Dashboard Summary */}
+        {/* Mobile Dashboard Metrics */}
         <div className="grid grid-cols-2 gap-3">
           <Card>
             <CardContent className="p-3">
               <div className="text-center">
-                <p className="text-xs font-medium text-gray-600">Cobrado Hoy</p>
-                <p className="text-lg font-bold text-green-600">
-                  S/ {dashboardMetrics.todayIncome.toFixed(0)}
-                </p>
+                <p className="text-xs text-gray-600">Hoy</p>
+                <p className="text-lg font-bold text-green-600">S/ {todayIncome.toFixed(0)}</p>
               </div>
             </CardContent>
           </Card>
-          
           <Card>
             <CardContent className="p-3">
               <div className="text-center">
-                <p className="text-xs font-medium text-gray-600">En Deuda</p>
-                <p className="text-lg font-bold text-red-600">
-                  S/ {dashboardMetrics.totalDebt.toFixed(0)}
-                </p>
+                <p className="text-xs text-gray-600">Deuda</p>
+                <p className="text-lg font-bold text-red-600">S/ {totalDebt.toFixed(0)}</p>
               </div>
             </CardContent>
           </Card>
         </div>
       </div>
 
-      {/* Search Bar */}
+      {/* Recent Activity */}
       <div className="p-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-          <Input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Busca por paciente"
-            className="pl-10 h-12 border-gray-300 rounded-xl focus:ring-2 focus:ring-offset-2"
-            style={{ '--tw-ring-color': '#FF6E63' } as any}
-          />
-        </div>
-      </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Recent Payments */}
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-gray-800">Pagos Recientes</h2>
+                <Badge className="bg-green-100 text-green-700">3</Badge>
+              </div>
+              {recentPayments.length > 0 ? (
+                recentPayments.map((payment) => (
+                  <TransactionCard key={payment.id} item={payment} />
+                ))
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  No hay pagos recientes
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
-      {/* Main Content */}
-      <div className="p-4 space-y-6">
-        {/* Recent Payments Section */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-800">Últimos pagos</h2>
-          </div>
-          
-          <div className="space-y-2">
-            {recentPayments.map((payment) => (
-              <TransactionCard key={`payment-${payment.id}`} item={payment} />
-            ))}
-          </div>
-          
-          <Button 
-            variant="ghost" 
-            className="w-full h-12 rounded-xl transition-all duration-200 hover:bg-transparent"
-            style={{ 
-              color: '#FF6E63' 
-            }}
-          >
-            Ver todos
-          </Button>
+          {/* Recent Quotes */}
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-gray-800">Cotizaciones Recientes</h2>
+                <Badge className="bg-blue-100 text-blue-700">3</Badge>
+              </div>
+              {recentQuotes.length > 0 ? (
+                recentQuotes.map((quote) => (
+                  <TransactionCard key={quote.id} item={quote} />
+                ))
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  No hay cotizaciones recientes
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
-
-        {/* Recent Quotes Section */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-800">Últimas cotizaciones</h2>
-          </div>
-          
-          <div className="space-y-2">
-            {recentQuotes.map((quote) => (
-              <TransactionCard key={`quote-${quote.id}`} item={quote} />
-            ))}
-          </div>
-          
-          <Button 
-            variant="ghost" 
-            className="w-full h-12 rounded-xl transition-all duration-200 hover:bg-transparent"
-            style={{ 
-              color: '#FF6E63' 
-            }}
-          >
-            Ver todos
-          </Button>
-        </div>
-      </div>
-
-      {/* Floating Action Button */}
-      <div className="fixed bottom-20 md:bottom-6 right-6">
-        <Button
-          size="icon"
-          className="h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-all duration-200"
-          style={{ backgroundColor: '#FF6E63' }}
-        >
-          <Plus className="h-6 w-6 text-white" />
-        </Button>
       </div>
     </div>
   );
